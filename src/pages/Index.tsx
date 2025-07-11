@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Search, Plus, Filter, Heart, Eye, Code, Globe, Copy, CheckCircle, Upload, X, Phone, Calendar } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
+import VehicleAddDialog from "@/components/VehicleAddDialog";
 const isEmbedded = window.self !== window.top;
 
 
@@ -475,169 +476,47 @@ const handleTestDriveSubmit = async () => {
       </DialogContent>
     </Dialog>
     
-    <Dialog open={isAddCarOpen} onOpenChange={setIsAddCarOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add vehicle(s)
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Add New Vehicle</DialogTitle>
-        </DialogHeader>
-                  
-                  {/* Image Upload Section */}
-                  <div className="mt-6">
-                    <Label className="text-base font-semibold">Vehicle Images</Label>
-                    <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6">
-                      <div className="text-center">
-                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="mt-4">
-                          <Label htmlFor="image-upload" className="cursor-pointer">
-                            <span className="mt-2 block text-sm font-medium text-gray-900">
-                              Upload vehicle images
-                            </span>
-                            <span className="mt-1 block text-sm text-gray-500">
-                              PNG, JPG, GIF up to 10MB each
-                            </span>
-                          </Label>
-                          <Input
-                            id="image-upload"
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Display uploaded images */}
-                    {uploadedImages.length > 0 && (
-                      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {uploadedImages.map((image, index) => (
-                          <div key={index} className="relative">
-                            <img
-                              src={image}
-                              alt={`Upload ${index + 1}`}
-                              className="w-full h-24 object-cover rounded-lg"
-                            />
-                            <button
-                              onClick={() => removeImage(index)}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                    <div>
-                      <Label htmlFor="make">Make *</Label>
-                      <Input 
-                        id="make"
-                        value={newCar.make}
-                        onChange={(e) => setNewCar({...newCar, make: e.target.value})}
-                        placeholder="e.g., Toyota"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="model">Model *</Label>
-                      <Input 
-                        id="model"
-                        value={newCar.model}
-                        onChange={(e) => setNewCar({...newCar, model: e.target.value})}
-                        placeholder="e.g., Camry"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="year">Year *</Label>
-                      <Input 
-                        id="year"
-                        type="number"
-                        value={newCar.year}
-                        onChange={(e) => setNewCar({...newCar, year: e.target.value})}
-                        placeholder="2023"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="price">Price *</Label>
-                      <Input 
-                        id="price"
-                        type="number"
-                        value={newCar.price}
-                        onChange={(e) => setNewCar({...newCar, price: e.target.value})}
-                        placeholder="25000"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="mileage">Mileage</Label>
-                      <Input 
-                        id="mileage"
-                        type="number"
-                        value={newCar.mileage}
-                        onChange={(e) => setNewCar({...newCar, mileage: e.target.value})}
-                        placeholder="50000"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="vin">VIN</Label>
-                      <Input 
-                        id="vin"
-                        value={newCar.vin}
-                        onChange={(e) => setNewCar({...newCar, vin: e.target.value})}
-                        placeholder="VIN Number"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="fuel">Fuel Type</Label>
-                      <Select value={newCar.fuel} onValueChange={(value) => setNewCar({...newCar, fuel: value})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select fuel type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Gasoline">Gasoline</SelectItem>
-                          <SelectItem value="Diesel">Diesel</SelectItem>
-                          <SelectItem value="Hybrid">Hybrid</SelectItem>
-                          <SelectItem value="Electric">Electric</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="transmission">Transmission</Label>
-                      <Select value={newCar.transmission} onValueChange={(value) => setNewCar({...newCar, transmission: value})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select transmission" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Automatic">Automatic</SelectItem>
-                          <SelectItem value="Manual">Manual</SelectItem>
-                          <SelectItem value="CVT">CVT</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea 
-                      id="description"
-                      value={newCar.description}
-                      onChange={(e) => setNewCar({...newCar, description: e.target.value})}
-                      placeholder="Describe the vehicle's condition, features, and details..."
-                      className="h-20"
-                    />
-                  </div>
-                  <Button onClick={handleAddCar} className="w-full mt-6">
-                    Add Vehicle
-                  </Button>
-                </DialogContent>
-              </Dialog>
-            </div>
+    {/* REPLACED Add Vehicle Dialog with VehicleAddDialog */}
+    <Button variant="outline" className="flex items-center gap-2" onClick={() => setIsAddCarOpen(true)}>
+      <Plus className="h-4 w-4" />
+      Add vehicle(s)
+    </Button>
+    <VehicleAddDialog
+      isOpen={isAddCarOpen}
+      onClose={() => setIsAddCarOpen(false)}
+      onSave={(vehicleData) => {
+        // Map vehicleData to Car type and add to cars
+        const newVehicle = {
+          id: Date.now(),
+          make: vehicleData.make,
+          model: vehicleData.model,
+          year: parseInt(vehicleData.year) || 0,
+          price: parseInt(vehicleData.sellingPrice) || 0,
+          mileage: parseInt(vehicleData.mileage) || 0,
+          location: "Location TBD",
+          fuel: vehicleData.fuelType || "Gasoline",
+          transmission: vehicleData.transmissionType || "Automatic",
+          image: vehicleData.images && vehicleData.images[0] ? vehicleData.images[0] : "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+          condition: vehicleData.condition || "Good",
+          description: vehicleData.description || "No description provided.",
+          vin: vehicleData.vin || `VIN${Date.now()}`,
+          availability:
+            vehicleData.status === "sold"
+              ? "Sold"
+              : vehicleData.status === "reserved"
+              ? "Reserved"
+              : "Available" as "Available" | "Sold" | "Reserved",
+        };
+        setCars(prev => [...prev, newVehicle]);
+        setFilteredCars(prev => [...prev, newVehicle]);
+        setIsAddCarOpen(false);
+        toast({
+          title: "Vehicle Added Successfully!",
+          description: `${newVehicle.make} ${newVehicle.model} added to your database.`
+        });
+      }}
+    />
+  </div>
             )}
           </div>
         </div>
