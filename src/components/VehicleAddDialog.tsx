@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -137,6 +137,12 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[700px] max-w-none p-0 overflow-hidden">
+        <DialogTitle asChild>
+          <span className="sr-only">Add Vehicle</span>
+        </DialogTitle>
+        <DialogDescription asChild>
+          <span className="sr-only">Fill out the form to add a new vehicle to the inventory.</span>
+        </DialogDescription>
         <div className="flex flex-col h-full">
           <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 relative">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">

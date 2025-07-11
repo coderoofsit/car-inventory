@@ -760,8 +760,7 @@ const handleTestDriveSubmit = async () => {
                   {formatPrice(car.price)}
                 </div>
                 <div className="text-sm text-gray-600 space-y-1">
-                  <div>{car.mileage.toLocaleString()} miles</div>
-                  <div>{car.fuel} • {car.transmission}</div>
+                  {[<div key="mileage">{car.mileage.toLocaleString()} miles</div>, <div key="fuel">{car.fuel} • {car.transmission}</div>]}
                 </div>
               </CardContent>
               <CardFooter className="pt-2">
@@ -980,15 +979,17 @@ const handleTestDriveSubmit = async () => {
                             <SelectValue placeholder="Select time" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="09:00">9:00 AM</SelectItem>
-                            <SelectItem value="10:00">10:00 AM</SelectItem>
-                            <SelectItem value="11:00">11:00 AM</SelectItem>
-                            <SelectItem value="12:00">12:00 PM</SelectItem>
-                            <SelectItem value="13:00">1:00 PM</SelectItem>
-                            <SelectItem value="14:00">2:00 PM</SelectItem>
-                            <SelectItem value="15:00">3:00 PM</SelectItem>
-                            <SelectItem value="16:00">4:00 PM</SelectItem>
-                            <SelectItem value="17:00">5:00 PM</SelectItem>
+                            {['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'].map(time => (
+                              <SelectItem key={time} value={time}>{
+                                time === '12:00' ? '12:00 PM' :
+                                time === '13:00' ? '1:00 PM' :
+                                time === '14:00' ? '2:00 PM' :
+                                time === '15:00' ? '3:00 PM' :
+                                time === '16:00' ? '4:00 PM' :
+                                time === '17:00' ? '5:00 PM' :
+                                time + (parseInt(time) < 12 ? ' AM' : ' PM')
+                              }</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
