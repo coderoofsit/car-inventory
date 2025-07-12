@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, X, Search } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Progress } from "@/components/ui/progress";
-import { uploadImageToBackend } from "@/lib/imageAPI";
+import { uploadMediaToBackend } from "@/lib/mediaAPI";
 
 interface VehicleAddDialogProps {
   isOpen: boolean;
@@ -18,8 +18,30 @@ interface VehicleAddDialogProps {
 }
 
 const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, onSave }) => {
+  // Month and Year arrays for dropdowns
+  const months = [
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' }
+  ];
+
+  const years = Array.from({ length: 100 }, (_, i) => {
+    const currentYear = new Date().getFullYear();
+    const year = currentYear - i;
+    return { value: year.toString(), label: year.toString() };
+  });
+
   const [activeTab, setActiveTab] = useState("info");
-  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [uploadedMedia, setUploadedMedia] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -33,15 +55,15 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
     trim: '',
     bodyStyle: undefined,
     doors: '',
-    manufactureMonth: '',
-    manufactureYear: '',
+    manufactureMonth: undefined,
+    manufactureYear: undefined,
     brand: '',
     noOfOwner: undefined,
     homeTestDrive: undefined,
-    registrationMonth: '',
-    registrationYear: '',
-    insuranceValidityMonth: '',
-    insuranceValidityYear: '',
+    registrationMonth: undefined,
+    registrationYear: undefined,
+    insuranceValidityMonth: undefined,
+    insuranceValidityYear: undefined,
     insuranceValid: undefined,
     insuranceType: '',
     rto: '',
@@ -76,18 +98,88 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
     documentsAvailable: [],
     additional: []
   });
+// 1. Add a function to reset all form state
+const resetForm = () => {
+  setVehicleData({
+    vin: '',
+    year: '',
+    make: '',
+    model: '',
+    trim: '',
+    bodyStyle: undefined,
+    doors: '',
+    manufactureMonth: undefined,
+    manufactureYear: undefined,
+    brand: '',
+    noOfOwner: undefined,
+    homeTestDrive: undefined,
+    registrationMonth: undefined,
+    registrationYear: undefined,
+    insuranceValidityMonth: undefined,
+    insuranceValidityYear: undefined,
+    insuranceValid: undefined,
+    insuranceType: '',
+    rto: '',
+    engineCapacity: '',
+    bodyStyleDetails: undefined,
+    ownerDetails: undefined,
+    homeTestDriveDetails: undefined,
+    kmRun: '',
+    fuelTypeDetails: undefined,
+    transmissionTypeDetails: undefined,
+    exteriorColorDetails: '',
+    interiorColorDetails: '',
+    condition: undefined,
+    sellingPrice: '',
+    status: undefined,
+    mileage: '',
+    mileageUnit: '',
+    fuelType: '',
+    driveType: '',
+    transmissionType: '',
+    engineType: '',
+    exteriorColor: '',
+    interiorColor: '',
+    description: '',
+    interior: [],
+    convenience: [],
+    safety: [],
+    exterior: [],
+    performance: [],
+    documentsAvailable: [],
+    additional: []
+  });
+  setUploadedMedia([]);
+  setNewAdditionalFeature('');
+  setActiveTab('info');
+};
 
+// 2. Update handleSave to reset the form after saving
+
+
+// 3. Optionally, also reset form when dialog is closed
+const handleDialogClose = () => {
+  resetForm();
+  onClose();
+};
+
+// 4. Use handleDialogClose in <Dialog open={isOpen} onOpenChange={handleDialogClose}>
   // Add state for new additional feature input
   const [newAdditionalFeature, setNewAdditionalFeature] = useState<string>('');
 
   const handleInputChange = (field: string, value: string) => {
     setVehicleData(prev => ({
       ...prev,
-      [field]: value === '' ? undefined : value
+      [field]: value === '' || value === undefined || value === null ? undefined : value
     }));
   };
+  
+  // Also add this helper function to safely get Select values
+  const getSelectValue = (value: string | undefined) => {
+    return value === '' || value === undefined || value === null ? undefined : value;
+  };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
       setUploadSuccess(false);
@@ -96,12 +188,12 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
       for (const file of Array.from(files)) {
         setUploadProgress(0);
         try {
-          const url = await uploadImageToBackend(file, (progress) => setUploadProgress(progress));
-          setUploadedImages(prev => ([...prev, url] as string[]));
+          const url = await uploadMediaToBackend(file, (progress) => setUploadProgress(progress));
+          setUploadedMedia(prev => ([...prev, url] as string[]));
           setUploadSuccess(true);
         } catch (err) {
           setUploadSuccess(false);
-          setUploadError('Image upload failed. Please try again.');
+          setUploadError('Media upload failed. Please try again.');
         }
         setUploadProgress(null);
       }
@@ -109,14 +201,52 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
     }
   };
 
-  const removeImage = (index: number) => {
-    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+  const removeMedia = (index: number) => {
+    setUploadedMedia(prev => prev.filter((_, i) => i !== index));
   };
-
+  const cleanVehicleData = (data: any) => {
+    const cleaned = { ...data };
+    
+    // Convert empty strings to undefined for all fields
+    Object.keys(cleaned).forEach(key => {
+      if (cleaned[key] === '' || cleaned[key] === null) {
+        cleaned[key] = undefined;
+      }
+    });
+    
+    return cleaned;
+  };
   const handleSave = () => {
-    onSave({ ...vehicleData, images: uploadedImages });
+    // Validate required fields
+    const requiredFields = [
+      { field: 'brand', label: 'Brand' },
+      { field: 'model', label: 'Model' },
+      { field: 'fuelTypeDetails', label: 'Fuel Type' },
+      { field: 'vin', label: 'VIN' },
+      { field: 'transmissionTypeDetails', label: 'Transmission' },
+      { field: 'kmRun', label: 'Mileage (KM)' },
+      { field: 'manufactureYear', label: 'Manufacture Year' },
+      { field: 'manufactureMonth', label: 'Manufacture Month' },
+      { field: 'status', label: 'Status' },
+      { field: 'condition', label: 'Condition' },
+      { field: 'sellingPrice', label: 'Selling Price' }
+    ];
+
+    const missingFields = requiredFields.filter(({ field }) => {
+      const value = vehicleData[field as keyof typeof vehicleData];
+      return !value || value === '' || value === undefined;
+    });
+
+    if (missingFields.length > 0) {
+      const missingFieldNames = missingFields.map(f => f.label).join(', ');
+      alert(`Please fill in all required fields: ${missingFieldNames}`);
+      return;
+    }
+
+    const cleanedData = cleanVehicleData(vehicleData);
+    onSave({ ...cleanedData, media: uploadedMedia });
+    resetForm(); // <-- Reset form state
     onClose();
-    // Do NOT reset any form values here
   };
 
   // 1. Update featureCategories to match the provided lists
@@ -152,7 +282,7 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogContent className="relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[700px] max-w-none p-0 overflow-hidden">
         <DialogTitle asChild>
           <span className="sr-only">Add Vehicle</span>
@@ -186,7 +316,7 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
                   <div className="flex flex-col gap-4 items-center">
                     {/* VIN */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="vin" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">VIN:</Label>
+                      <Label htmlFor="vin" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">VIN: <span className="text-red-500">*</span></Label>
                       <div className="relative  w-2/3">
                         <Input
                           id="vin"
@@ -200,30 +330,40 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
                     </div>
                     {/* Manufacture Year (Month, Year) */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="manufactureMonth" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Manufacture Month/Year</Label>
+                      <Label htmlFor="manufactureMonth" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Manufacture Month/Year <span className="text-red-500">*</span></Label>
                       <div className='flex flex-row w-2/3 '>
-                      <Input
-                        id="manufactureYear"
-                        placeholder="Year"
-                        value={vehicleData.manufactureYear || ''}
-                        onChange={(e) => handleInputChange('manufactureYear', e.target.value)}
-                        className="w-full mr-2 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
-                        maxLength={4}
-                      />
-                      <Input
-                        id="manufactureMonth"
-                        placeholder="Month"
-                        value={vehicleData.manufactureMonth || ''}
-                        onChange={(e) => handleInputChange('manufactureMonth', e.target.value)}
-                        className="w-full h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
-                        maxLength={2}
-                      />
+                      <Select
+                        value={vehicleData.manufactureMonth}
+                        onValueChange={(value) => handleInputChange('manufactureMonth', value)}
+                      >
+                        <SelectTrigger className="w-full h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+                          <SelectValue placeholder="Select Month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {months.map(month => (
+                            <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={vehicleData.manufactureYear}
+                        onValueChange={(value) => handleInputChange('manufactureYear', value)}
+                      >
+                        <SelectTrigger className="w-full h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+                          <SelectValue placeholder="Select Year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {years.map(year => (
+                            <SelectItem key={year.value} value={year.value}>{year.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       </div>
                      
                     </div>
                     {/* Brand */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="brand" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Brand:</Label>
+                      <Label htmlFor="brand" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Brand: <span className="text-red-500">*</span></Label>
                       <Input
                         id="brand"
                         placeholder="Enter Brand"
@@ -232,109 +372,99 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
                         className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
                       />
                     </div>
-                    {/* Body Style */}
+                    {/* Model */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="bodyStyle" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Body Style:</Label>
-                      <Select value={vehicleData.bodyStyle || undefined} onValueChange={(value) => handleInputChange('bodyStyle', value)}>
-                        <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                          <SelectValue placeholder="Select Body Style" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sedan">Sedan</SelectItem>
-                          <SelectItem value="suv">SUV</SelectItem>
-                          <SelectItem value="hatchback">Hatchback</SelectItem>
-                          <SelectItem value="coupe">Coupe</SelectItem>
-                          <SelectItem value="convertible">Convertible</SelectItem>
-                          <SelectItem value="wagon">Wagon</SelectItem>
-                          <SelectItem value="truck">Truck</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="model" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Model: <span className="text-red-500">*</span></Label>
+                      <Input
+                        id="model"
+                        placeholder="Enter Model"
+                        value={vehicleData.model || ''}
+                        onChange={(e) => handleInputChange('model', e.target.value)}
+                        className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
+                      />
                     </div>
-                    {/* No. of Owner */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="noOfOwner" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">No. of Owner:</Label>
-                      <Select value={vehicleData.noOfOwner || undefined} onValueChange={(value) => handleInputChange('noOfOwner', value)}>
-                        <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                          <SelectValue placeholder="Select Owner Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="not-registered">Not Registered</SelectItem>
-                          <SelectItem value="1st-owner">1st Owner</SelectItem>
-                          <SelectItem value="2nd-owner">2nd Owner</SelectItem>
-                          <SelectItem value="3rd-owner">3rd Owner</SelectItem>
-                          <SelectItem value="4th-owner">4th Owner</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {/* Home Test Drive Available? */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="homeTestDrive" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Home Test Drive Available?</Label>
-                      <Select value={vehicleData.homeTestDrive || undefined} onValueChange={(value) => handleInputChange('homeTestDrive', value)}>
-                        <SelectTrigger className="w-full h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                          <SelectValue placeholder="Select Option" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="yes">Yes</SelectItem>
-                          <SelectItem value="no">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+
+
+
                     {/* Registration Year (Month, Year) */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
                       <Label htmlFor="registrationMonth" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Registration Month/Year </Label>
-                      <div className='w-2/3 flex flex-row'><Input
-                        id="registrationMonth"
-                        placeholder="Month"
-                        value={vehicleData.registrationMonth || ''}
-                        onChange={(e) => handleInputChange('registrationMonth', e.target.value)}
-                        className="w-full mr-2 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
-                        maxLength={2}
-                      />
-                      <Input
-                        id="registrationYear"
-                        placeholder="Year"
-                        value={vehicleData.registrationYear || ''}
-                        onChange={(e) => handleInputChange('registrationYear', e.target.value)}
-                        className="w-full h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
-                        maxLength={4}
-                      /></div>
+                      <div className='w-2/3 flex flex-row'><Select
+                        value={vehicleData.registrationMonth}
+                        onValueChange={(value) => handleInputChange('registrationMonth', value)}
+                      >
+                        <SelectTrigger className="w-full mr-2 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+                          <SelectValue placeholder="Select Month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {months.map(month => (
+                            <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={vehicleData.registrationYear}
+                        onValueChange={(value) => handleInputChange('registrationYear', value)}
+                      >
+                        <SelectTrigger className="w-full h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+                          <SelectValue placeholder="Select Year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {years.map(year => (
+                            <SelectItem key={year.value} value={year.value}>{year.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      </div>
                     </div>
                     {/* Insurance Validity (Month, Year, Yes/No) */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
                       <Label htmlFor="insuranceValidityMonth" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Insurance Validity Month</Label>
                       <div className='flex flex-row w-2/3'>
-                      <Input
-                        id="insuranceValidityMonth"
-                        placeholder="Month"
-                        value={vehicleData.insuranceValidityMonth || ''}
-                        onChange={(e) => handleInputChange('insuranceValidityMonth', e.target.value)}
-                        className="w-full mr-2 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
-                        maxLength={2}
-                      />
-                      <Input
-                        id="insuranceValidityYear"
-                        placeholder="Year"
-                        value={vehicleData.insuranceValidityYear || ''}
-                        onChange={(e) => handleInputChange('insuranceValidityYear', e.target.value)}
-                        className="w-full h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
-                        maxLength={4}
-                      />
+                      <Select
+                        value={vehicleData.insuranceValidityMonth}
+                        onValueChange={(value) => handleInputChange('insuranceValidityMonth', value)}
+                      >
+                        <SelectTrigger className="w-full mr-2 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+                          <SelectValue placeholder="Select Month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {months.map(month => (
+                            <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={vehicleData.insuranceValidityYear}
+                        onValueChange={(value) => handleInputChange('insuranceValidityYear', value)}
+                      >
+                        <SelectTrigger className="w-full h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+                          <SelectValue placeholder="Select Year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {years.map(year => (
+                            <SelectItem key={year.value} value={year.value}>{year.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       </div>
                       
                     </div>
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                     
-                      <Label htmlFor="insuranceValid" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Insurance Valid?</Label>
-                      <Select value={vehicleData.insuranceValid || undefined} onValueChange={(value) => handleInputChange('insuranceValid', value)}>
-                        <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                          <SelectValue placeholder="Yes/No" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="yes">Yes</SelectItem>
-                          <SelectItem value="no">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+  <Label htmlFor="insuranceValid" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Insurance Valid?</Label>
+  <Select 
+    value={vehicleData.insuranceValid && vehicleData.insuranceValid.trim() !== '' ? vehicleData.insuranceValid : undefined} 
+    onValueChange={(value) => handleInputChange('insuranceValid', value)}
+  >
+    <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+      <SelectValue placeholder="Yes/No" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="yes">Yes</SelectItem>
+      <SelectItem value="no">No</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
                     {/* Insurance Type */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
                       <Label htmlFor="insuranceType" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Insurance Type:</Label>
@@ -369,6 +499,17 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
                         className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
                       />
                     </div>
+                    {/* Description */}
+                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                      <Label htmlFor="description" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Description:</Label>
+                      <Textarea
+                        id="description"
+                        placeholder="Enter vehicle description"
+                        value={vehicleData.description || ''}
+                        onChange={(e) => handleInputChange('description', e.target.value)}
+                        className="w-2/3 h-20 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400 resize-none"
+                      />
+                    </div>
                   </div>
                 </TabsContent>
 
@@ -376,22 +517,25 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
                   <div className="flex flex-col gap-4 items-center">
                     {/* Condition */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="condition" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">Condition:</Label>
-                      <Select value={vehicleData.condition || undefined} onValueChange={(value) => handleInputChange('condition', value)}>
-                        <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                          <SelectValue placeholder="Select Condition" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="new">New</SelectItem>
-                          <SelectItem value="used">Used</SelectItem>
-                          <SelectItem value="certified-pre-owned">Certified Pre-Owned</SelectItem>
-                          <SelectItem value="demo-car">Demo Car</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+  <Label htmlFor="condition" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">Condition: <span className="text-red-500">*</span></Label>
+  <Select 
+    value={vehicleData.condition && vehicleData.condition.trim() !== '' ? vehicleData.condition : undefined} 
+    onValueChange={(value) => handleInputChange('condition', value)}
+  >
+    <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+      <SelectValue placeholder="Select Condition" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="new">New</SelectItem>
+      <SelectItem value="used">Used</SelectItem>
+      <SelectItem value="certified-pre-owned">Certified Pre-Owned</SelectItem>
+      <SelectItem value="demo-car">Demo Car</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
                     {/* Selling Price */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="sellingPrice" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">Selling Price (INR):</Label>
+                      <Label htmlFor="sellingPrice" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">Selling Price (INR): <span className="text-red-500">*</span></Label>
                       <Input
                         id="sellingPrice"
                         placeholder="Enter Selling Price"
@@ -403,69 +547,81 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
                     </div>
                     {/* Status */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="status" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">Status:</Label>
-                      <Select value={vehicleData.status || undefined} onValueChange={(value) => handleInputChange('status', value)}>
-                        <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                          <SelectValue placeholder="Select Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="available">Available</SelectItem>
-                          <SelectItem value="sold">Sold</SelectItem>
-                          <SelectItem value="reserved">Reserved</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+  <Label htmlFor="status" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">Status: <span className="text-red-500">*</span></Label>
+  <Select 
+    value={vehicleData.status && vehicleData.status.trim() !== '' ? vehicleData.status : undefined} 
+    onValueChange={(value) => handleInputChange('status', value)}
+  >
+    <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+      <SelectValue placeholder="Select Status" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="available">Available</SelectItem>
+      <SelectItem value="sold">Sold</SelectItem>
+      <SelectItem value="reserved">Reserved</SelectItem>
+      <SelectItem value="pending">Pending</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
                     {/* Body Style */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="bodyStyleDetails" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">Body Style:</Label>
-                      <Select value={vehicleData.bodyStyleDetails || undefined} onValueChange={(value) => handleInputChange('bodyStyleDetails', value)}>
-                        <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                          <SelectValue placeholder="Select Body Style" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sedan">Sedan</SelectItem>
-                          <SelectItem value="suv">SUV</SelectItem>
-                          <SelectItem value="hatchback">Hatchback</SelectItem>
-                          <SelectItem value="coupe">Coupe</SelectItem>
-                          <SelectItem value="convertible">Convertible</SelectItem>
-                          <SelectItem value="wagon">Wagon</SelectItem>
-                          <SelectItem value="truck">Truck</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+  <Label htmlFor="bodyStyleDetails" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">Body Style:</Label>
+  <Select 
+    value={vehicleData.bodyStyleDetails && vehicleData.bodyStyleDetails.trim() !== '' ? vehicleData.bodyStyleDetails : undefined} 
+    onValueChange={(value) => handleInputChange('bodyStyleDetails', value)}
+  >
+    <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+      <SelectValue placeholder="Select Body Style" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="sedan">Sedan</SelectItem>
+      <SelectItem value="suv">SUV</SelectItem>
+      <SelectItem value="hatchback">Hatchback</SelectItem>
+      <SelectItem value="coupe">Coupe</SelectItem>
+      <SelectItem value="convertible">Convertible</SelectItem>
+      <SelectItem value="wagon">Wagon</SelectItem>
+      <SelectItem value="truck">Truck</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
                     {/* Owner */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="ownerDetails" className="text-right w-1/3  text-sm font-semibold text-gray-700 whitespace-nowrap">Owner:</Label>
-                      <Select value={vehicleData.ownerDetails || undefined} onValueChange={(value) => handleInputChange('ownerDetails', value)}>
-                        <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                          <SelectValue placeholder="Select Owner Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="not-registered">Not Registered</SelectItem>
-                          <SelectItem value="1st-owner">1st Owner</SelectItem>
-                          <SelectItem value="2nd-owner">2nd Owner</SelectItem>
-                          <SelectItem value="3rd-owner">3rd Owner</SelectItem>
-                          <SelectItem value="4th-owner">4th Owner</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+  <Label htmlFor="ownerDetails" className="text-right w-1/3  text-sm font-semibold text-gray-700 whitespace-nowrap">Owner:</Label>
+  <Select 
+    value={vehicleData.ownerDetails && vehicleData.ownerDetails.trim() !== '' ? vehicleData.ownerDetails : undefined} 
+    onValueChange={(value) => handleInputChange('ownerDetails', value)}
+  >
+    <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+      <SelectValue placeholder="Select Owner Status" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="not-registered">Not Registered</SelectItem>
+      <SelectItem value="1st-owner">1st Owner</SelectItem>
+      <SelectItem value="2nd-owner">2nd Owner</SelectItem>
+      <SelectItem value="3rd-owner">3rd Owner</SelectItem>
+      <SelectItem value="4th-owner">4th Owner</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
                     {/* Home Test Drive Available? */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="homeTestDriveDetails" className="w-1/3  text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Home Test Drive Available?</Label>
-                      <Select value={vehicleData.homeTestDriveDetails || undefined} onValueChange={(value) => handleInputChange('homeTestDriveDetails', value)}>
-                        <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                          <SelectValue placeholder="Select Option" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="yes">Yes</SelectItem>
-                          <SelectItem value="no">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+  <Label htmlFor="homeTestDriveDetails" className="w-1/3  text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Home Test Drive Available?</Label>
+  <Select 
+    value={vehicleData.homeTestDriveDetails && vehicleData.homeTestDriveDetails.trim() !== '' ? vehicleData.homeTestDriveDetails : undefined} 
+    onValueChange={(value) => handleInputChange('homeTestDriveDetails', value)}
+  >
+    <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+      <SelectValue placeholder="Select Option" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="yes">Yes</SelectItem>
+      <SelectItem value="no">No</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
                     {/* KM run */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="kmRun" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">KM run:</Label>
+                      <Label htmlFor="kmRun" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">KM run: <span className="text-red-500">*</span></Label>
                       <Input
                         id="kmRun"
                         placeholder="Enter KM run"
@@ -477,33 +633,39 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
                     </div>
                     {/* Fuel Type */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="fuelTypeDetails" className="text-right w-1/3 stext-sm font-semibold text-gray-700 whitespace-nowrap">Fuel Type:</Label>
-                      <Select value={vehicleData.fuelTypeDetails || undefined} onValueChange={(value) => handleInputChange('fuelTypeDetails', value)}>
-                        <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                          <SelectValue placeholder="Select Fuel Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="petrol">Petrol</SelectItem>
-                          <SelectItem value="diesel">Diesel</SelectItem>
-                          <SelectItem value="electric">Electric (EV)</SelectItem>
-                          <SelectItem value="hybrid">Hybrid</SelectItem>
-                          <SelectItem value="cng">CNG</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+  <Label htmlFor="fuelTypeDetails" className="text-right w-1/3 stext-sm font-semibold text-gray-700 whitespace-nowrap">Fuel Type: <span className="text-red-500">*</span></Label>
+  <Select 
+    value={vehicleData.fuelTypeDetails && vehicleData.fuelTypeDetails.trim() !== '' ? vehicleData.fuelTypeDetails : undefined} 
+    onValueChange={(value) => handleInputChange('fuelTypeDetails', value)}
+  >
+    <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+      <SelectValue placeholder="Select Fuel Type" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="petrol">Petrol</SelectItem>
+      <SelectItem value="diesel">Diesel</SelectItem>
+      <SelectItem value="electric">Electric (EV)</SelectItem>
+      <SelectItem value="hybrid">Hybrid</SelectItem>
+      <SelectItem value="cng">CNG</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
                     {/* Transmission Type */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
-                      <Label htmlFor="transmissionTypeDetails" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Transmission Type:</Label>
-                      <Select value={vehicleData.transmissionTypeDetails || undefined} onValueChange={(value) => handleInputChange('transmissionTypeDetails', value)}>
-                        <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                          <SelectValue placeholder="Select Transmission" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="manual">Manual</SelectItem>
-                          <SelectItem value="automatic">Automatic</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+  <Label htmlFor="transmissionTypeDetails" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Transmission Type: <span className="text-red-500">*</span></Label>
+  <Select 
+    value={vehicleData.transmissionTypeDetails && vehicleData.transmissionTypeDetails.trim() !== '' ? vehicleData.transmissionTypeDetails : undefined} 
+    onValueChange={(value) => handleInputChange('transmissionTypeDetails', value)}
+  >
+    <SelectTrigger className="w-2/3 h-11 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
+      <SelectValue placeholder="Select Transmission" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="manual">Manual</SelectItem>
+      <SelectItem value="automatic">Automatic</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
                     {/* Exterior Colour */}
                     <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
                       <Label htmlFor="exteriorColorDetails" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Exterior Colour:</Label>
@@ -536,10 +698,10 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
                         <div className="text-center">
                           <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                           <div className="text-sm font-medium text-gray-900 mb-2">
-                            Click to upload images of the vehicle or drop images here to upload.
+                            Click to upload images and videos of the vehicle or drop media files here to upload.
                           </div>
                           <div className="text-sm text-gray-500 mb-4">
-                            Max upload size is 10MB per image. Multiple image upload allowed.
+                            Supported formats: JPG, PNG, GIF, MP4, MOV, AVI, WebM. Max upload size is 50MB per file. Multiple files allowed.
                           </div>
                           <Button
                             type="button"
@@ -548,15 +710,15 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
                             disabled={uploading}
                             onClick={() => fileInputRef.current?.click()}
                           >
-                            {uploading ? 'Uploading...' : 'Upload Images'}
+                            {uploading ? 'Uploading...' : 'Upload Media'}
                           </Button>
                           <Input
                             ref={fileInputRef}
-                            id="image-upload"
+                            id="media-upload"
                             type="file"
                             multiple
-                            accept="image/*"
-                            onChange={handleImageUpload}
+                            accept="image/*,video/*,.jpg,.jpeg,.png,.gif,.mp4,.mov,.avi,.webm"
+                            onChange={handleMediaUpload}
                             className="hidden"
                           />
                           {uploadProgress !== null && (
@@ -577,24 +739,38 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
                         </div>
                       </div>
                     </div>
-                    {/* Display uploaded images */}
-                    {uploadedImages.length > 0 && (
+                    {/* Display uploaded media */}
+                    {uploadedMedia.length > 0 && (
                       <div className="grid grid-cols-3 gap-4">
-                        {uploadedImages.map((image, index) => (
-                          <div key={index} className="relative w-32 h-32 mx-auto">
-                            <img
-                              src={image}
-                              alt={`Upload ${index + 1}`}
-                              className="w-full h-full object-cover rounded-lg border"
-                            />
-                            <button
-                              onClick={() => removeImage(index)}
-                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
+                        {uploadedMedia.map((mediaUrl, index) => {
+                          const isVideo = mediaUrl.match(/\.(mp4|mov|avi|webm)$/i) || mediaUrl.includes('video');
+                          return (
+                            <div key={index} className="relative w-32 h-32 mx-auto">
+                              {isVideo ? (
+                                <video
+                                  src={mediaUrl}
+                                  className="w-full h-full object-cover rounded-lg border"
+                                  controls
+                                  muted
+                                >
+                                  Your browser does not support the video tag.
+                                </video>
+                              ) : (
+                                <img
+                                  src={mediaUrl}
+                                  alt={`Upload ${index + 1}`}
+                                  className="w-full h-full object-cover rounded-lg border"
+                                />
+                              )}
+                              <button
+                                onClick={() => removeMedia(index)}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

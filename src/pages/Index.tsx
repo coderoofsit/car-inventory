@@ -14,25 +14,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Search, Plus, Filter, Heart, Eye, Code, Globe, Copy, CheckCircle, Upload, X, Phone, Calendar } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import VehicleAddDialog from "@/components/VehicleAddDialog";
+import CarList from "@/components/CarList";
+import { saveVehicleToBackend, fetchVehiclesFromBackend, fetchCarById } from "@/lib/vehicleAPI";
+import CarDetailDialog from "@/components/CarDetailDialog";
+import { findFirstImageUrl, Car } from "@/lib/utils";
 const isEmbedded = window.self !== window.top;
-
-
-interface Car {
-  id: number;
-  make: string;
-  model: string;
-  year: number;
-  price: number;
-  mileage: number;
-  location: string;
-  fuel: string;
-  transmission: string;
-  image: string;
-  condition: string;
-  description: string;
-  vin: string;
-  availability: 'Available' | 'Sold' | 'Reserved';
-}
 
 const sampleCars: Car[] = [
   {
@@ -106,7 +92,9 @@ const [cars, setCars] = useState<Car[]>([]);
 const [filteredCars, setFilteredCars] = useState<Car[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMake, setSelectedMake] = useState('all');
-  const [selectedCar, setSelectedCar] = useState<Car | null>(null);
+  const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
+  const [selectedCarDetails, setSelectedCarDetails] = useState<any>(null);
+  const [loadingCarDetails, setLoadingCarDetails] = useState(false);
   const [isAddCarOpen, setIsAddCarOpen] = useState(false);
   const [isIntegrateOpen, setIsIntegrateOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -153,31 +141,70 @@ frameborder="0">
     fuel: '', transmission: '', condition: '', description: '', image: '', vin: ''
   });
   React.useEffect(() => {
-  axios.get('http://localhost:5000/api/cars')
-    .then(res => {
-      setCars(res.data);
-      setFilteredCars(res.data);
-    })
-    .catch(err => {
+    const loadCars = async () => {
+      try {
+        const carsData = await fetchVehiclesFromBackend();
+        
+        // Map backend data to frontend Car interface
+        const mappedCars: Car[] = carsData.map((car: any) => ({
+          id: car._id || Date.now(),
+          make: car.brand || car.make || "Unknown",
+          model: car.model || "Unknown",
+          year: parseInt(car.manufactureYear || car.year) || 0,
+          price: parseInt(car.sellingPrice || car.price) || 0,
+          mileage: parseInt(car.kmRun || car.mileage) || 0,
+          location: car.location || "Location TBD",
+          fuel: car.fuelTypeDetails || car.fuel || "Gasoline",
+          transmission: car.transmissionTypeDetails || car.transmission || "Automatic",
+          image: findFirstImageUrl(car.images) || car.image || "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+          condition: car.condition || "Good",
+          description: car.description || "No description provided.",
+          vin: car.vin || `VIN${Date.now()}`,
+          availability: car.availability || "Available"
+        }));
+        
+        setCars(mappedCars);
+        setFilteredCars(mappedCars);
+      } catch (err) {
       console.error('Failed to fetch cars:', err);
+        toast({
+          title: "Error Loading Vehicles",
+          description: "Failed to load vehicles from database. Please refresh the page.",
+          variant: "destructive"
     });
+      }
+    };
+    
+    loadCars();
 }, []);
 
+  // Fetch car details when selectedCarId changes
+  React.useEffect(() => {
+    if (selectedCarId) {
+      setLoadingCarDetails(true);
+      fetchCarById(selectedCarId)
+        .then(car => setSelectedCarDetails(car))
+        .catch(() => setSelectedCarDetails(null))
+        .finally(() => setLoadingCarDetails(false));
+    } else {
+      setSelectedCarDetails(null);
+    }
+  }, [selectedCarId]);
 
 
   // Filter cars based on all criteria
   React.useEffect(() => {
     const filtered = cars.filter(car => {
-      const matchesSearch = car.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           car.model.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesMake = selectedMake === 'all' || car.make.toLowerCase() === selectedMake.toLowerCase();
+      const matchesSearch = (car.make?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                           (car.model?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+      const matchesMake = selectedMake === 'all' || (car.make?.toLowerCase() || '') === selectedMake.toLowerCase();
       const matchesMinPrice = !filters.minPrice || car.price >= parseInt(filters.minPrice);
       const matchesMaxPrice = !filters.maxPrice || car.price <= parseInt(filters.maxPrice);
       const matchesMinYear = !filters.minYear || car.year >= parseInt(filters.minYear);
       const matchesMaxYear = !filters.maxYear || car.year <= parseInt(filters.maxYear);
-      const matchesFuel = filters.fuelType === 'all' || car.fuel.toLowerCase() === filters.fuelType.toLowerCase();
-      const matchesTransmission = filters.transmission === 'all' || car.transmission.toLowerCase() === filters.transmission.toLowerCase();
-      const matchesCondition = filters.condition === 'all' || car.condition.toLowerCase() === filters.condition.toLowerCase();
+      const matchesFuel = filters.fuelType === 'all' || (car.fuel?.toLowerCase() || '') === filters.fuelType.toLowerCase();
+      const matchesTransmission = filters.transmission === 'all' || (car.transmission?.toLowerCase() || '') === filters.transmission.toLowerCase();
+      const matchesCondition = filters.condition === 'all' || (car.condition?.toLowerCase() || '') === filters.condition.toLowerCase();
       const matchesMinMileage = !filters.minMileage || car.mileage >= parseInt(filters.minMileage);
       const matchesMaxMileage = !filters.maxMileage || car.mileage <= parseInt(filters.maxMileage);
       
@@ -223,12 +250,13 @@ frameborder="0">
       maxPrice: '',
       minYear: '',
       maxYear: '',
-      fuelType: 'all',
-      transmission: 'all',
-      condition: 'all',
+      fuelType: 'all', // Use 'all' instead of empty string
+      transmission: 'all', // Use 'all' instead of empty string
+      condition: 'all', // Use 'all' instead of empty string
       minMileage: '',
       maxMileage: ''
     });
+    setSelectedMake('all'); // Reset this too
   };
 
 const handleAddCar = async () => {
@@ -393,15 +421,15 @@ const handleTestDriveSubmit = async () => {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price);
   };
 
-  const uniqueMakes = Array.from(new Set(cars.map(car => car.make)));
+  const uniqueMakes = Array.from(new Set(cars.map(car => car.make).filter(Boolean)));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -484,36 +512,60 @@ const handleTestDriveSubmit = async () => {
     <VehicleAddDialog
       isOpen={isAddCarOpen}
       onClose={() => setIsAddCarOpen(false)}
-      onSave={(vehicleData) => {
-        // Map vehicleData to Car type and add to cars
+      onSave={async (vehicleData) => {
+        try {
+          // Show loading toast
+          toast({
+            title: "Saving Vehicle...",
+            description: "Please wait while we save the vehicle to the database.",
+          });
+
+          // Save to backend
+          const savedVehicle = await saveVehicleToBackend(vehicleData);
+
+          // Map the saved vehicle data to the local Car type
         const newVehicle = {
-          id: Date.now(),
-          make: vehicleData.make,
-          model: vehicleData.model,
-          year: parseInt(vehicleData.year) || 0,
-          price: parseInt(vehicleData.sellingPrice) || 0,
-          mileage: parseInt(vehicleData.mileage) || 0,
-          location: "Location TBD",
-          fuel: vehicleData.fuelType || "Gasoline",
-          transmission: vehicleData.transmissionType || "Automatic",
-          image: vehicleData.images && vehicleData.images[0] ? vehicleData.images[0] : "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-          condition: vehicleData.condition || "Good",
-          description: vehicleData.description || "No description provided.",
-          vin: vehicleData.vin || `VIN${Date.now()}`,
+            id: savedVehicle._id || Date.now(),
+            make: savedVehicle.brand || vehicleData.brand || "Unknown",
+            model: savedVehicle.model || vehicleData.model || "Unknown",
+            year: parseInt(savedVehicle.manufactureYear || vehicleData.manufactureYear) || 0,
+            price: parseInt(savedVehicle.sellingPrice || vehicleData.sellingPrice) || 0,
+            mileage: parseInt(savedVehicle.kmRun || vehicleData.kmRun) || 0,
+            location: savedVehicle.location || "Location TBD",
+            fuel: savedVehicle.fuelTypeDetails || vehicleData.fuelTypeDetails || "Gasoline",
+            transmission: savedVehicle.transmissionTypeDetails || vehicleData.transmissionTypeDetails || "Automatic",
+            image: findFirstImageUrl(vehicleData.images) || findFirstImageUrl(savedVehicle.images) || "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            condition: savedVehicle.condition || vehicleData.condition || "Good",
+            description: savedVehicle.description || vehicleData.description || "No description provided.",
+            vin: savedVehicle.vin || vehicleData.vin || `VIN${Date.now()}`,
           availability:
-            vehicleData.status === "sold"
+              savedVehicle.status === "sold" || vehicleData.status === "sold"
               ? "Sold"
-              : vehicleData.status === "reserved"
+                : savedVehicle.status === "reserved" || vehicleData.status === "reserved"
               ? "Reserved"
               : "Available" as "Available" | "Sold" | "Reserved",
         };
+
+          // Add to local state
         setCars(prev => [...prev, newVehicle]);
         setFilteredCars(prev => [...prev, newVehicle]);
         setIsAddCarOpen(false);
+
+          // Show success toast
         toast({
           title: "Vehicle Added Successfully!",
-          description: `${newVehicle.make} ${newVehicle.model} added to your database.`
-        });
+            description: `${newVehicle.make} ${newVehicle.model} has been saved to the database.`
+          });
+        } catch (error) {
+          console.error('Error saving vehicle:', error);
+          
+          // Show error toast
+          toast({
+            title: "Error Saving Vehicle",
+            description: error instanceof Error ? error.message : "Failed to save vehicle to database. Please try again.",
+            variant: "destructive"
+          });
+        }
       }}
     />
   </div>
@@ -561,7 +613,7 @@ const handleTestDriveSubmit = async () => {
                           <Input
                             id="minPrice"
                             type="number"
-                            placeholder="$0"
+                            placeholder="₹0"
                             value={filters.minPrice}
                             onChange={(e) => setFilters({...filters, minPrice: e.target.value})}
                           />
@@ -571,7 +623,7 @@ const handleTestDriveSubmit = async () => {
                           <Input
                             id="maxPrice"
                             type="number"
-                            placeholder="$100,000"
+                            placeholder="₹10,00,000"
                             value={filters.maxPrice}
                             onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
                           />
@@ -636,7 +688,10 @@ const handleTestDriveSubmit = async () => {
                     {/* Fuel Type */}
                     <div>
                       <Label className="text-base font-semibold">Fuel Type</Label>
-                      <Select value={filters.fuelType} onValueChange={(value) => setFilters({...filters, fuelType: value})}>
+  <Select 
+    value={filters.fuelType && filters.fuelType.trim() !== '' ? filters.fuelType : "all"} 
+    onValueChange={(value) => setFilters({...filters, fuelType: value})}
+  >
                         <SelectTrigger className="mt-2">
                           <SelectValue placeholder="All Fuel Types" />
                         </SelectTrigger>
@@ -650,10 +705,14 @@ const handleTestDriveSubmit = async () => {
                       </Select>
                     </div>
 
+
                     {/* Transmission */}
                     <div>
                       <Label className="text-base font-semibold">Transmission</Label>
-                      <Select value={filters.transmission} onValueChange={(value) => setFilters({...filters, transmission: value})}>
+  <Select 
+    value={filters.transmission && filters.transmission.trim() !== '' ? filters.transmission : "all"} 
+    onValueChange={(value) => setFilters({...filters, transmission: value})}
+  >
                         <SelectTrigger className="mt-2">
                           <SelectValue placeholder="All Transmissions" />
                         </SelectTrigger>
@@ -669,7 +728,10 @@ const handleTestDriveSubmit = async () => {
                     {/* Condition */}
                     <div>
                       <Label className="text-base font-semibold">Condition</Label>
-                      <Select value={filters.condition} onValueChange={(value) => setFilters({...filters, condition: value})}>
+  <Select 
+    value={filters.condition && filters.condition.trim() !== '' ? filters.condition : "all"} 
+    onValueChange={(value) => setFilters({...filters, condition: value})}
+  >
                         <SelectTrigger className="mt-2">
                           <SelectValue placeholder="All Conditions" />
                         </SelectTrigger>
@@ -695,17 +757,21 @@ const handleTestDriveSubmit = async () => {
                 </SheetContent>
               </Sheet>
               
-              <Select value={selectedMake} onValueChange={setSelectedMake}>
+              <Select 
+  value={selectedMake && selectedMake.trim() !== '' ? selectedMake : "all"} 
+  onValueChange={setSelectedMake}
+>
                 <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="No Sort" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Makes</SelectItem>
                   {uniqueMakes.map(make => (
-                    <SelectItem key={make} value={make}>{make}</SelectItem>
+      <SelectItem key={`make-${make}`} value={make}>{make}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+
             </div>
           </div>
         </div>
@@ -713,316 +779,19 @@ const handleTestDriveSubmit = async () => {
 
       {/* Car Grid */}
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredCars.map((car,key) => (
-            <Card key={key} className="overflow-hidden hover:shadow-lg transition-shadow duration-300 bg-white">
-              <div className="relative">
-                <img 
-                  src={car.image} 
-                  alt={`${car.make} ${car.model}`}
-                  className="w-full h-48 object-cover"
-                />
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="absolute top-2 right-2 bg-white/80 hover:bg-white"
-                >
-                  <Heart className="h-4 w-4" />
-                </Button>
-                <Badge 
-                  className={`absolute top-2 left-2 ${
-                    car.availability === 'Available' ? 'bg-green-500' : 
-                    car.availability === 'Sold' ? 'bg-red-500' : 'bg-yellow-500'
-                  }`}
-                >
-                  {car.availability}
-                </Badge>
-              </div>
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {car.make} {car.model}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {car.vin}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant="outline" className="text-xs">
-                      {car.year}
-                    </Badge>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <div className="text-xl font-bold text-gray-900 mb-2">
-                  {formatPrice(car.price)}
-                </div>
-                <div className="text-sm text-gray-600 space-y-1">
-                  {[<div key="mileage">{car.mileage.toLocaleString()} miles</div>, <div key="fuel">{car.fuel} • {car.transmission}</div>]}
-                </div>
-              </CardContent>
-              <CardFooter className="pt-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => setSelectedCar(car)}
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Details
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-
-        {filteredCars.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No vehicles found matching your criteria.</p>
-          </div>
-        )}
+        <CarList 
+          cars={filteredCars} 
+          onCarClick={(car) => setSelectedCarId(car._id || car.id)}
+        />
       </div>
 
       {/* Car Detail Modal */}
-      {selectedCar && (
-        <Dialog open={!!selectedCar} onOpenChange={() => setSelectedCar(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold">
-                {selectedCar.make} {selectedCar.model} ({selectedCar.year})
-              </DialogTitle>
-            </DialogHeader>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-              <div>
-                <img 
-                  src={selectedCar.image} 
-                  alt={`${selectedCar.make} ${selectedCar.model}`}
-                  className="w-full h-80 object-cover rounded-lg"
-                />
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-3xl font-bold text-blue-600">{formatPrice(selectedCar.price)}</p>
-                  <div className="flex gap-2 mt-2">
-                    <Badge>{selectedCar.condition}</Badge>
-                    <Badge variant="outline">{selectedCar.fuel}</Badge>
-                    <Badge className="bg-green-500">{selectedCar.availability}</Badge>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div><strong>Year:</strong> {selectedCar.year}</div>
-                  <div><strong>Mileage:</strong> {selectedCar.mileage.toLocaleString()}</div>
-                  <div><strong>Fuel:</strong> {selectedCar.fuel}</div>
-                  <div><strong>Transmission:</strong> {selectedCar.transmission}</div>
-                  <div className="col-span-2"><strong>VIN:</strong> {selectedCar.vin}</div>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold mb-2">Description</h4>
-                  <p className="text-gray-700">{selectedCar.description}</p>
-                </div>
-                
-                {!showContactForm && !showTestDriveForm && (
-                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                    <Button 
-                      className="flex-1 flex items-center justify-center gap-2" 
-                      size="lg"
-                      onClick={() => setShowContactForm(true)}
-                    >
-                      <Phone className="h-4 w-4" />
-                      Contact Seller
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="flex-1 flex items-center justify-center gap-2" 
-                      size="lg"
-                      onClick={() => setShowTestDriveForm(true)}
-                    >
-                      <Calendar className="h-4 w-4" />
-                      Schedule Test Drive
-                    </Button>
-                  </div>
-                )}
-    
-
-
-                {/* Contact Form */}
-                {showContactForm && (
-                  <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold">Contact Seller</h4>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => setShowContactForm(false)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="contact-name">Name *</Label>
-                        <Input
-                          id="contact-name"
-                          value={contactForm.name}
-                          onChange={(e) => setContactForm({...contactForm, name: e.target.value})}
-                          placeholder="Your full name"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="contact-email">Email *</Label>
-                        <Input
-                          id="contact-email"
-                          type="email"
-                          value={contactForm.email}
-                          onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
-                          placeholder="your@email.com"
-                        />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <Label htmlFor="contact-phone">Phone *</Label>
-                        <Input
-                          id="contact-phone"
-                          type="tel"
-                          value={contactForm.phone}
-                          onChange={(e) => setContactForm({...contactForm, phone: e.target.value})}
-                          placeholder="Your phone number"
-                        />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <Label htmlFor="contact-message">Message</Label>
-                        <Textarea
-                          id="contact-message"
-                          value={contactForm.message}
-                          onChange={(e) => setContactForm({...contactForm, message: e.target.value})}
-                          placeholder="Additional questions or comments..."
-                          className="h-20"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button onClick={handleContactSubmit} className="flex-1">
-                        Send Message
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setShowContactForm(false)}
-                        className="flex-1"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Test Drive Form */}
-                {showTestDriveForm && (
-                  <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold">Schedule Test Drive</h4>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => setShowTestDriveForm(false)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="testdrive-name">Name *</Label>
-                        <Input
-                          id="testdrive-name"
-                          value={testDriveForm.name}
-                          onChange={(e) => setTestDriveForm({...testDriveForm, name: e.target.value})}
-                          placeholder="Your full name"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="testdrive-email">Email *</Label>
-                        <Input
-                          id="testdrive-email"
-                          type="email"
-                          value={testDriveForm.email}
-                          onChange={(e) => setTestDriveForm({...testDriveForm, email: e.target.value})}
-                          placeholder="your@email.com"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="testdrive-phone">Phone *</Label>
-                        <Input
-                          id="testdrive-phone"
-                          type="tel"
-                          value={testDriveForm.phone}
-                          onChange={(e) => setTestDriveForm({...testDriveForm, phone: e.target.value})}
-                          placeholder="Your phone number"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="testdrive-date">Preferred Date *</Label>
-                        <Input
-                          id="testdrive-date"
-                          type="date"
-                          value={testDriveForm.preferredDate}
-                          onChange={(e) => setTestDriveForm({...testDriveForm, preferredDate: e.target.value})}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="testdrive-time">Preferred Time</Label>
-                        <Select 
-                          value={testDriveForm.preferredTime} 
-                          onValueChange={(value) => setTestDriveForm({...testDriveForm, preferredTime: value})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select time" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00'].map(time => (
-                              <SelectItem key={time} value={time}>{
-                                time === '12:00' ? '12:00 PM' :
-                                time === '13:00' ? '1:00 PM' :
-                                time === '14:00' ? '2:00 PM' :
-                                time === '15:00' ? '3:00 PM' :
-                                time === '16:00' ? '4:00 PM' :
-                                time === '17:00' ? '5:00 PM' :
-                                time + (parseInt(time) < 12 ? ' AM' : ' PM')
-                              }</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="sm:col-span-2">
-                        <Label htmlFor="testdrive-message">Additional Notes</Label>
-                        <Textarea
-                          id="testdrive-message"
-                          value={testDriveForm.message}
-                          onChange={(e) => setTestDriveForm({...testDriveForm, message: e.target.value})}
-                          placeholder="Any specific requirements or questions..."
-                          className="h-20"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button onClick={handleTestDriveSubmit} className="flex-1">
-                        Schedule Test Drive
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setShowTestDriveForm(false)}
-                        className="flex-1"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      <CarDetailDialog
+        car={selectedCarDetails}
+        open={!!selectedCarId}
+        onOpenChange={open => setSelectedCarId(open ? selectedCarId : null)}
+        loading={loadingCarDetails}
+      />
     </div>
   );
 };
