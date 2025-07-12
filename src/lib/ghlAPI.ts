@@ -26,4 +26,3 @@ export const createOpportunity = async (opportunityData) => {
   const response = await api.post(url, opportunityData);
   return response.data;
 };
-

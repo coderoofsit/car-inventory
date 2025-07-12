@@ -714,8 +714,8 @@ const handleTestDriveSubmit = async () => {
       {/* Car Grid */}
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredCars.map((car) => (
-            <Card key={car.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300 bg-white">
+          {filteredCars.map((car,key) => (
+            <Card key={key} className="overflow-hidden hover:shadow-lg transition-shadow duration-300 bg-white">
               <div className="relative">
                 <img 
                   src={car.image} 
