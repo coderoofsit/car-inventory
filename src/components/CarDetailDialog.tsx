@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent } from './ui/dialog';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { ArrowLeft, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Heart, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 
 interface CarDetailDialogProps {
   car: any; // Use backend object directly
@@ -81,10 +81,10 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
               {media.length > 1 && (
                 <>
                   <button onClick={handlePrevMedia} className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md">
-                    <ChevronLeft className="h-6 w-6" />
+                    <ChevronLeft className="h-6 w-6 text-black" />
                   </button>
                   <button onClick={handleNextMedia} className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-md">
-                    <ChevronRight className="h-6 w-6" />
+                    <ChevronRight className="h-6 w-6 text-black" />
                   </button>
                 </>
               )}
@@ -115,25 +115,25 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
             <div className="p-6 border-b">
               <div className="flex items-center justify-between mb-4">
                 <Button variant="ghost" className="p-0 h-auto" onClick={() => onOpenChange(false)}>
-                  <ArrowLeft className="mr-2 h-5 w-5" /> Back
+                  <ArrowLeft className="mr-2 h-5 w-5 text-black" /> Back
                 </Button>
                 <Button variant="ghost" className="p-2">
-                  <Heart className="h-6 w-6" />
+                  <Heart className="h-6 w-6 text-black" />
                 </Button>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              <h1 className="text-3xl font-bold text-gray-900 mb-1">
                 {car.manufactureYear} {car.brand} {car.model}
               </h1>
-              <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
-                <span>{car.kmRun ? `${car.kmRun} km` : 'Not Specified'}</span>
-                <span>•</span>
+              <div className="flex items-center gap-2 text-lg text-gray-700 font-normal mb-2">
+                <span>{car.kmRun ? `${(car.kmRun/1000).toFixed(car.kmRun%1000===0?0:1)}K km` : 'Not Specified'}</span>
+                <span>·</span>
                 <span>{car.fuelTypeDetails || 'Not Specified'}</span>
-                <span>•</span>
+                <span>·</span>
                 <span>{car.transmissionTypeDetails || 'Not Specified'}</span>
               </div>
               {car.homeTestDriveDetails && (
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                  <span className="text-orange-500">🏠</span>
+                  <Home className="h-5 w-5 text-black" />
                   <span>Home Test Drive: {car.homeTestDriveDetails}</span>
                 </div>
               )}
