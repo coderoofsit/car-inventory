@@ -41,26 +41,25 @@ export async function saveVehicleToBackend(vehicleData: any): Promise<any> {
  * Usage:
  *   import { fetchVehiclesFromBackend } from './vehicleAPI';
  */
-export async function fetchVehiclesFromBackend(filters?: Record<string, any>): Promise<any[]> {
+export async function fetchVehiclesFromBackend(params?: Record<string, any>): Promise<any[]> {
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-  let fetchUrl = `${backendUrl}/api/cars`;
-  if (filters && Object.keys(filters).length > 0) {
-    const params = new URLSearchParams();
-    if (filters.make) params.append('make', filters.make);
-    if (filters.model) params.append('model', filters.model);
-    if (filters.fuel) params.append('fuel', filters.fuel);
-    if (filters.transmission) params.append('transmission', filters.transmission);
-    if (filters.ownership) params.append('ownership', filters.ownership);
-    if (filters.minYear) params.append('minYear', filters.minYear);
-    if (filters.maxYear) params.append('maxYear', filters.maxYear);
-    if (filters.minPrice) params.append('minPrice', filters.minPrice);
-    if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
-    if (filters.minKmRun) params.append('minKmRun', filters.minKmRun);
-    if (filters.maxKmRun) params.append('maxKmRun', filters.maxKmRun);
-    fetchUrl += `?${params.toString()}`;
+  let url = `${backendUrl}/api/cars`;
+  if (params) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach(v => searchParams.append(key, v));
+      } else if (value !== undefined && value !== null && value !== "") {
+        searchParams.append(key, value);
+      }
+    });
+    if (Array.from(searchParams).length > 0) {
+      url += `?${searchParams.toString()}`;
+    }
   }
+  console.log('fetchVehiclesFromBackend URL:', url); // <-- Debug log
   try {
-    const response = await fetch(fetchUrl, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -70,8 +69,7 @@ export async function fetchVehiclesFromBackend(filters?: Record<string, any>): P
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
-    const vehicles = await response.json();
-    return vehicles;
+    return await response.json();
   } catch (error) {
     console.error('Error fetching vehicles from backend:', error);
     throw error;

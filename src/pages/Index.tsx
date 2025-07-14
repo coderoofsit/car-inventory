@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { createContact, createOpportunity } from "@/lib/ghlAPI";
 import { Button } from "@/components/ui/button";
@@ -87,6 +87,19 @@ const sampleCars: Car[] = [
     availability: 'Available'
   }
 ];
+
+// Debounce utility
+function useDebouncedEffect(effect: () => void, deps: React.DependencyList, delay: number) {
+  const callback = useRef<() => void>(() => {});
+  callback.current = effect;
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      callback.current();
+    }, delay);
+    return () => clearTimeout(handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...deps, delay]);
+}
 
 const Index = () => {
 const [cars, setCars] = useState<Car[]>([]);
@@ -205,6 +218,8 @@ frameborder="0">
       params.minKmRun = pendingFilters.kmRunRange.min;
       params.maxKmRun = pendingFilters.kmRunRange.max;
     }
+    // Always include the current searchTerm if present
+    if (searchTerm.trim()) params.search = searchTerm.trim();
     try {
       const carsData = await fetchVehiclesFromBackend(params);
       setCars(carsData);
@@ -259,6 +274,42 @@ frameborder="0">
     setFilters(newDefault);
     setPendingFilters(newDefault);
   }, [filterMeta]);
+
+  // Debounced search effect: only depends on searchTerm
+  useDebouncedEffect(() => {
+    const params: Record<string, any> = {};
+    if (searchTerm.trim()) {
+      params.search = searchTerm.trim();
+    }
+    // Always use the current filters state
+    if (filters.brands && filters.brands.length > 0) params.brand = filters.brands;
+    if (filters.models && filters.models.length > 0) params.model = filters.models;
+    if (filters.bodyStyles && filters.bodyStyles.length > 0) params.bodyStyle = filters.bodyStyles;
+    if (filters.fuelTypes && filters.fuelTypes.length > 0) params.fuel = filters.fuelTypes;
+    if (filters.transmission) params.transmission = filters.transmission;
+    if (filters.ownership) params.ownership = filters.ownership;
+    if (filters.yearRange) {
+      params.minYear = filters.yearRange.min;
+      params.maxYear = filters.yearRange.max;
+    }
+    if (filters.priceRange) {
+      params.minPrice = filters.priceRange.min;
+      params.maxPrice = filters.priceRange.max;
+    }
+    if (filters.kmRunRange) {
+      params.minKmRun = filters.kmRunRange.min;
+      params.maxKmRun = filters.kmRunRange.max;
+    }
+    console.log('Debounced search params:', params);
+    fetchVehiclesFromBackend(params)
+      .then(carsData => {
+        setCars(carsData);
+        setFilteredCars(carsData);
+      })
+      .catch(err => {
+        console.error('Error fetching cars for search:', err);
+      });
+  }, [searchTerm], 400);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;

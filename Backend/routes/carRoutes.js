@@ -94,31 +94,38 @@ router.get('/', async (req, res) => {
 router.get('/cars', async (req, res) => {
   try {
     const query = {};
-    // Build OR logic for multi-selects
-    const orConditions = [];
+    // Multi-select fields: OR within field, AND between fields
     if (req.query.brand) {
       const brands = Array.isArray(req.query.brand) ? req.query.brand : [req.query.brand];
-      orConditions.push({ brand: { $in: brands.map(b => new RegExp(`^${b}$`, 'i')) } });
+      query["brand"] = { $in: brands.map(b => new RegExp(`^${b}$`, 'i')) };
     }
     if (req.query.model) {
       const models = Array.isArray(req.query.model) ? req.query.model : [req.query.model];
-      orConditions.push({ model: { $in: models.map(m => new RegExp(`^${m}$`, 'i')) } });
+      query["model"] = { $in: models.map(m => new RegExp(`^${m}$`, 'i')) };
     }
     if (req.query.bodyStyle) {
       const bodyStyles = Array.isArray(req.query.bodyStyle) ? req.query.bodyStyle : [req.query.bodyStyle];
-      orConditions.push({ bodyStyleDetails: { $in: bodyStyles.map(bs => new RegExp(`^${bs}$`, 'i')) } });
+      query["bodyStyleDetails"] = { $in: bodyStyles.map(bs => new RegExp(`^${bs}$`, 'i')) };
     }
     if (req.query.fuel) {
       const fuels = Array.isArray(req.query.fuel) ? req.query.fuel : [req.query.fuel];
-      orConditions.push({ fuelTypeDetails: { $in: fuels.map(f => new RegExp(`^${f}$`, 'i')) } });
+      query["fuelTypeDetails"] = { $in: fuels.map(f => new RegExp(`^${f}$`, 'i')) };
     }
     if (req.query.transmission) {
       const transmissions = Array.isArray(req.query.transmission) ? req.query.transmission : [req.query.transmission];
-      orConditions.push({ transmissionTypeDetails: { $in: transmissions.map(t => new RegExp(`^${t}$`, 'i')) } });
+      query["transmissionTypeDetails"] = { $in: transmissions.map(t => new RegExp(`^${t}$`, 'i')) };
     }
     if (req.query.ownership) {
       const ownerships = Array.isArray(req.query.ownership) ? req.query.ownership : [req.query.ownership];
-      orConditions.push({ ownerDetails: { $in: ownerships.map(o => new RegExp(`^${o}$`, 'i')) } });
+      query["ownerDetails"] = { $in: ownerships.map(o => new RegExp(`^${o}$`, 'i')) };
+    }
+    // Search bar: match brand or model (case-insensitive, partial)
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, 'i');
+      query.$or = [
+        { brand: searchRegex },
+        { model: searchRegex }
+      ];
     }
     // Range filters (AND logic)
     if (req.query.minYear || req.query.maxYear) {
@@ -136,14 +143,9 @@ router.get('/cars', async (req, res) => {
       if (req.query.minKmRun) query["kmRun"].$gte = Number(req.query.minKmRun);
       if (req.query.maxKmRun) query["kmRun"].$lte = Number(req.query.maxKmRun);
     }
-    // Combine OR and AND
-    let finalQuery = { ...query };
-    if (orConditions.length > 0) {
-      finalQuery = { $and: [query, { $or: orConditions }] };
-    }
     // Log the final query for debugging
-    console.log('Car filter query:', JSON.stringify(finalQuery, null, 2));
-    const cars = await Car.find(finalQuery);
+    console.log('Car filter query:', JSON.stringify(query, null, 2));
+    const cars = await Car.find(query);
     res.json(cars);
   } catch (err) {
     res.status(500).json({ error: err.message });
