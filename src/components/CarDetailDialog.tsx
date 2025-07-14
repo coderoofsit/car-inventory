@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { ArrowLeft, Heart, ChevronLeft, ChevronRight, Home } from 'lucide-react';
+import { ArrowLeft, Heart, ChevronLeft, ChevronRight, Home, Edit } from 'lucide-react';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 interface CarDetailDialogProps {
@@ -137,17 +137,21 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
                 <div className="flex items-center gap-2">
                   {!isEmbedded && (
                     <Button variant="ghost" className="p-2" onClick={onEdit}>
+                      <Edit />
                       Edit
                     </Button>
                   )}
-                  <Button variant="ghost" className="p-2">
-                    <Heart className="h-6 w-6 text-black" />
-                  </Button>
+                  
                 </div>
               </div>
+              <div className='flex flex-row justify-between'>
               <h1 className="text-3xl font-bold text-gray-900 mb-1">
                 {car.manufactureYear} {toTitleCase(car.brand || '')} {toTitleCase(car.model || '')}
               </h1>
+                  <Button variant="ghost" className="p-2">
+                    <Heart className="h-10 w-10 text-black" />
+                  </Button>
+              </div>
               <div className="flex items-center gap-2 text-lg text-gray-700 font-normal mb-2">
                 <span>{car.kmRun ? `${(car.kmRun/1000).toFixed(car.kmRun%1000===0?0:1)}K km` : 'Not Specified'}</span>
                 <span>·</span>
@@ -202,18 +206,6 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
                         <span className="text-sm text-gray-900 font-semibold">{field.value}</span>
                       </div>
                     ))}
-                  </div>
-                  {/* Vehicle Description Section */}
-                  <div className="mb-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="text-lg">📄</span>
-                      <h3 className="text-lg font-semibold">Vehicle Description</h3>
-                    </div>
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <p className="text-sm text-purple-600 mb-2">
-                        {car.description || 'No description provided.'}
-                      </p>
-                    </div>
                   </div>
                 </TabsContent>
                 <TabsContent value="description" className="p-6">
