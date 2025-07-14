@@ -28,7 +28,6 @@ export interface VehicleFilters {
 interface VehicleFilterComponentProps {
   filters: VehicleFilters;
   setFilters: React.Dispatch<React.SetStateAction<VehicleFilters>>;
-  onApply?: () => void;
   onClear?: () => void;
   brandOptions: FilterOption[];
   modelOptions: FilterOption[];
@@ -36,7 +35,7 @@ interface VehicleFilterComponentProps {
   transmissionOptions: FilterOption[];
 }
 
-const VehicleFilterComponent: React.FC<VehicleFilterComponentProps> = ({ filters, setFilters, onApply, onClear, brandOptions, modelOptions, fuelTypeOptions, transmissionOptions }) => {
+const VehicleFilterComponent: React.FC<VehicleFilterComponentProps> = ({ filters, setFilters, onClear, brandOptions, modelOptions, fuelTypeOptions, transmissionOptions }) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const bodyStyleOptions: FilterOption[] = [
@@ -345,9 +344,6 @@ const VehicleFilterComponent: React.FC<VehicleFilterComponentProps> = ({ filters
       <div className="flex justify-end mt-8 gap-4">
         <Button type="button" variant="outline" onClick={handleClear} className="px-8 py-3 text-base font-semibold">
           Clear Filters
-        </Button>
-        <Button type="button" onClick={onApply} className="px-8 py-3 text-base font-semibold">
-          Apply Filters
         </Button>
       </div>
 

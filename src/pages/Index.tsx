@@ -314,6 +314,45 @@ frameborder="0">
       });
   }, [searchTerm], 400);
 
+  // Add useEffect to apply filters automatically when pendingFilters changes
+  React.useEffect(() => {
+    // Map pendingFilters to backend query params
+    const params: Record<string, any> = {};
+    if (pendingFilters.brands && pendingFilters.brands.length > 0) params.brand = pendingFilters.brands;
+    if (pendingFilters.models && pendingFilters.models.length > 0) params.model = pendingFilters.models;
+    if (pendingFilters.bodyStyles && pendingFilters.bodyStyles.length > 0) params.bodyStyle = pendingFilters.bodyStyles;
+    if (pendingFilters.fuelTypes && pendingFilters.fuelTypes.length > 0) params.fuel = pendingFilters.fuelTypes;
+    if (pendingFilters.transmission) params.transmission = pendingFilters.transmission;
+    if (pendingFilters.ownership) params.ownership = pendingFilters.ownership;
+    if (pendingFilters.yearRange) {
+      params.minYear = pendingFilters.yearRange.min;
+      params.maxYear = pendingFilters.yearRange.max;
+    }
+    if (pendingFilters.priceRange) {
+      params.minPrice = pendingFilters.priceRange.min;
+      params.maxPrice = pendingFilters.priceRange.max;
+    }
+    if (pendingFilters.kmRunRange) {
+      params.minKmRun = pendingFilters.kmRunRange.min;
+      params.maxKmRun = pendingFilters.kmRunRange.max;
+    }
+    // Always include the current searchTerm if present
+    if (searchTerm.trim()) params.search = searchTerm.trim();
+
+    fetchVehiclesFromBackend(params)
+      .then(carsData => {
+        setCars(carsData);
+        setFilteredCars(carsData);
+      })
+      .catch(err => {
+        toast({
+          title: "Error Applying Filters",
+          description: "Failed to fetch filtered vehicles from database.",
+          variant: "destructive"
+        });
+      });
+  }, [pendingFilters, searchTerm]);
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
@@ -693,7 +732,6 @@ const handleTestDriveSubmit = async () => {
           <VehicleFilterComponent 
             filters={pendingFilters} 
             setFilters={setPendingFilters}
-            onApply={handleApplyFilters}
             onClear={handleClearFilters}
             brandOptions={filterMeta.brands.map((b: string) => ({ value: b, label: b }))}
             modelOptions={filterMeta.models.map((m: string) => ({ value: m, label: m }))}
