@@ -166,6 +166,8 @@ const handleDialogClose = () => {
 // 4. Use handleDialogClose in <Dialog open={isOpen} onOpenChange={handleDialogClose}>
   // Add state for new additional feature input
   const [newAdditionalFeature, setNewAdditionalFeature] = useState<string>('');
+  // Add state for search text in each feature category
+  const [featureSearch, setFeatureSearch] = useState<Record<string, string>>({});
 
   const handleInputChange = (field: string, value: string) => {
     setVehicleData(prev => ({
@@ -786,17 +788,22 @@ const handleDialogClose = () => {
                             {category.charAt(0).toUpperCase() + category.slice(1).replace(/([A-Z])/g, ' $1')}
                           </AccordionTrigger>
                           <AccordionContent className="bg-white px-4 pb-4 rounded-b-lg">
-                            {/* Search bar for this category */}
-                            <div className="mb-3">
-                              <Input
-                                placeholder={`Search ${category.charAt(0).toUpperCase() + category.slice(1)} Features`}
-                                className="w-full h-10 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
-                                // TODO: Implement search/filter logic if needed
-                              />
-                            </div>
+                            {/* Search bar for this category, except 'additional' */}
+                            {category !== 'additional' && (
+                              <div className="mb-3">
+                                <Input
+                                  placeholder={`Search ${category.charAt(0).toUpperCase() + category.slice(1)} Features`}
+                                  className="w-full h-10 px-3 py-4 mt-4 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
+                                  value={featureSearch[category] || ''}
+                                  onChange={e => setFeatureSearch(prev => ({ ...prev, [category]: e.target.value }))}
+                                />
+                              </div>
+                            )}
                             {/* Feature checkboxes */}
-                            <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-                              {features.map((feature) => (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                              {features.filter(feature =>
+                                !featureSearch[category] || feature.toLowerCase().includes(featureSearch[category].toLowerCase())
+                              ).map((feature) => (
                                 <label key={feature} className="flex items-center space-x-2 text-sm">
                                   <input
                                     type="checkbox"
@@ -808,10 +815,11 @@ const handleDialogClose = () => {
                                 </label>
                               ))}
                             </div>
-                            {/* Additional section: Add feature button */}
+                            {/* Additional section: Add feature button and input */}
                             {category === 'additional' && (
                               <div className="mt-4 flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
+                                {/* Add feature input row appears immediately when Add Feature is clicked */}
+                                {newAdditionalFeature === '' && (
                                   <Button
                                     type="button"
                                     variant="outline"
@@ -821,57 +829,57 @@ const handleDialogClose = () => {
                                   >
                                     Add feature
                                   </Button>
-                                  {newAdditionalFeature !== '' && (
-                                    <div className="flex items-center gap-1">
-                                      <input
-                                        type="text"
-                                        autoFocus
-                                        value={newAdditionalFeature}
-                                        onChange={e => setNewAdditionalFeature(e.target.value)}
-                                        onBlur={() => {
+                                )}
+                                {newAdditionalFeature !== '' && (
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="text"
+                                      autoFocus
+                                      value={newAdditionalFeature}
+                                      onChange={e => setNewAdditionalFeature(e.target.value)}
+                                      onBlur={() => {
+                                        if (newAdditionalFeature.trim()) {
+                                          setVehicleData(prev => ({
+                                            ...prev,
+                                            additional: [...prev.additional, newAdditionalFeature.trim()]
+                                          }));
+                                          setNewAdditionalFeature('');
+                                        } else {
+                                          setNewAdditionalFeature('');
+                                        }
+                                      }}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
                                           if (newAdditionalFeature.trim()) {
                                             setVehicleData(prev => ({
                                               ...prev,
                                               additional: [...prev.additional, newAdditionalFeature.trim()]
                                             }));
                                             setNewAdditionalFeature('');
-                                          } else {
-                                            setNewAdditionalFeature('');
                                           }
-                                        }}
-                                        onKeyDown={e => {
-                                          if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            if (newAdditionalFeature.trim()) {
-                                              setVehicleData(prev => ({
-                                                ...prev,
-                                                additional: [...prev.additional, newAdditionalFeature.trim()]
-                                              }));
-                                              setNewAdditionalFeature('');
-                                            }
-                                          } else if (e.key === 'Escape') {
-                                            setNewAdditionalFeature('');
-                                          }
-                                        }}
-                                        className="w-48 h-10 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
-                                        placeholder="Enter feature"
-                                      />
-                                      <button
-                                        type="button"
-                                        className="text-red-500 hover:text-red-700 text-lg px-1"
-                                        onClick={() => setNewAdditionalFeature('')}
-                                        tabIndex={-1}
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
+                                        } else if (e.key === 'Escape') {
+                                          setNewAdditionalFeature('');
+                                        }
+                                      }}
+                                      className="w-48 h-10 px-3 py-2 text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
+                                      placeholder="Enter feature"
+                                    />
+                                    <button
+                                      type="button"
+                                      className="text-red-500 hover:text-red-700 text-lg px-1"
+                                      onClick={() => setNewAdditionalFeature('')}
+                                      tabIndex={-1}
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                )}
                                 {/* List custom features */}
                                 {vehicleData.additional.length > 0 && (
-                                  <div className="mt-2">
+                                  <div className="mt-2 flex flex-col gap-2">
                                     {vehicleData.additional.map((feature: string) => (
-                                      <div key={feature} className="flex items-center gap-2 mb-1">
+                                      <div key={feature} className="flex items-center gap-2">
                                         <input
                                           type="checkbox"
                                           checked={vehicleData.additional.includes(feature)}
