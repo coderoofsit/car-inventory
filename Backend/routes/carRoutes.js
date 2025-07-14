@@ -200,10 +200,7 @@ router.post('/cars', async (req, res) => {
   console.log('[carRoutes] POST / - Add new car');
   try {
     // Accept 'media' as the array of images/videos
-    if (req.body.media && Array.isArray(req.body.media)) {
-      req.body.images = req.body.media;
-      delete req.body.media;
-    }
+    // No conversion needed, use req.body.media directly
     const car = new Car(req.body);
     const savedCar = await car.save();
     res.status(201).json(savedCar);

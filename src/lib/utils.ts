@@ -18,7 +18,7 @@ export interface Car {
   location: string;
   fuel: string;
   transmission: string;
-  image: string;
+  media: string[];
   condition: string;
   description: string;
   vin: string;
@@ -26,7 +26,7 @@ export interface Car {
 }
 
 // Utility function to find the first image URL from an array
-export function findFirstImageUrl(urls: string[]): string | null {
+export function findFirstMediaUrl(urls: string[]): string | null {
   if (!Array.isArray(urls) || urls.length === 0) {
     return null;
   }
@@ -69,16 +69,16 @@ export function findFirstVideoUrl(urls: string[]): string | null {
 
 // Utility function to get the best media URL for a car (image > image field > video > null)
 export function getCarCardMediaUrl(car: any): { url: string; type: 'image' | 'video' | 'placeholder' } {
-  // 1. Check images array for a valid image
-  if (Array.isArray(car.images) && car.images.length > 0) {
+  // 1. Check media array for a valid image
+  if (Array.isArray(car.media) && car.media.length > 0) {
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg', '.avif'];
-    const image = car.images.find((url: string) =>
+    const image = car.media.find((url: string) =>
       typeof url === 'string' && imageExtensions.some(ext => url.toLowerCase().includes(ext))
     );
     if (image) return { url: image, type: 'image' };
     // If only videos, optionally return the first video
     const videoExtensions = ['.mp4', '.mov', '.avi', '.webm'];
-    const video = car.images.find((url: string) =>
+    const video = car.media.find((url: string) =>
       typeof url === 'string' && videoExtensions.some(ext => url.toLowerCase().includes(ext))
     );
     if (video) return { url: video, type: 'video' };

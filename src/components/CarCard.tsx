@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, Calendar } from 'lucide-react';
+import { Heart, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getCarCardMediaUrl } from '@/lib/utils';
 
 interface CarCardProps {
@@ -9,7 +9,12 @@ interface CarCardProps {
 
 const CarCard: React.FC<CarCardProps> = ({ car, onClick }) => {
   const placeholder = 'https://via.placeholder.com/400x300?text=No+Image';
-  const media = getCarCardMediaUrl(car);
+  const [mediaIndex, setMediaIndex] = React.useState(0);
+  const mediaArr: string[] = Array.isArray(car.media) && car.media.length > 0 ? car.media : [];
+  const isVideo = (url: string) => /\.(mp4|mov|avi|webm)$/i.test(url) || url.includes('video');
+  const currentMedia = mediaArr[mediaIndex] || '';
+  const handlePrev = (e: React.MouseEvent) => { e.stopPropagation(); setMediaIndex((prev) => (prev === 0 ? mediaArr.length - 1 : prev - 1)); };
+  const handleNext = (e: React.MouseEvent) => { e.stopPropagation(); setMediaIndex((prev) => (prev === mediaArr.length - 1 ? 0 : prev + 1)); };
   const isAvailable = (car.availability || car.status || '').toLowerCase() === 'available';
   const isSold = (car.availability || car.status || '').toLowerCase() === 'sold';
   const statusColor = isAvailable ? 'text-green-600' : isSold ? 'text-gray-400' : 'text-yellow-500';
@@ -26,31 +31,43 @@ const CarCard: React.FC<CarCardProps> = ({ car, onClick }) => {
 
   return (
     <div
-      className="bg-white rounded-xl shadow-md p-0 overflow-hidden cursor-pointer hover:shadow-lg transition w-80"
+      className="bg-white rounded-xl shadow-md p-0 overflow-hidden cursor-pointer hover:shadow-lg transition w-full sm:w-80"
       onClick={onClick}
     >
-      <div className="relative w-full h-52 bg-gray-100">
-        {media.type === 'image' && media.url ? (
-          <img
-            src={media.url}
-            alt={`${brand} ${model}`}
-            className="w-full h-52 object-cover rounded-t-xl"
-          />
-        ) : media.type === 'video' && media.url ? (
-          <video
-            src={media.url}
-            className="w-full h-52 object-cover rounded-t-xl"
-            muted
-            playsInline
-            preload="metadata"
-            style={{ background: '#000' }}
-          />
+      <div className="relative w-full h-40 sm:h-52 bg-gray-100">
+        {currentMedia ? (
+          isVideo(currentMedia) ? (
+            <video
+              src={currentMedia}
+              className="w-full h-40 sm:h-52 object-cover rounded-t-xl"
+              muted
+              playsInline
+              preload="metadata"
+              style={{ background: '#000' }}
+            />
+          ) : (
+            <img
+              src={currentMedia}
+              alt={`${brand} ${model}`}
+              className="w-full h-40 sm:h-52 object-cover rounded-t-xl"
+            />
+          )
         ) : (
           <img
             src={placeholder}
             alt="No Image"
-            className="w-full h-52 object-cover rounded-t-xl"
+            className="w-full h-40 sm:h-52 object-cover rounded-t-xl"
           />
+        )}
+        {mediaArr.length > 1 && (
+          <>
+            <button onClick={handlePrev} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1 shadow-md z-10">
+              <ChevronLeft className="h-4 w-4 text-black" />
+            </button>
+            <button onClick={handleNext} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-1 shadow-md z-10">
+              <ChevronRight className="h-4 w-4 text-black" />
+            </button>
+          </>
         )}
         <div className="absolute top-3 right-3 bg-white/80 rounded-full p-1 shadow">
           <Heart className="h-6 w-6 text-gray-400 hover:text-red-500 transition" />

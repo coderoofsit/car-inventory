@@ -17,7 +17,7 @@ import VehicleAddDialog from "@/components/VehicleAddDialog";
 import CarList from "@/components/CarList";
 import { saveVehicleToBackend, fetchVehiclesFromBackend, fetchCarById, fetchFilterMetadataFromBackend } from "@/lib/vehicleAPI";
 import CarDetailDialog from "@/components/CarDetailDialog";
-import { findFirstImageUrl, Car } from "@/lib/utils";
+import { findFirstMediaUrl, Car } from "@/lib/utils";
 import VehicleFilterComponent, { VehicleFilters } from '@/components/VehicleFilterComponent';
 const isEmbedded = window.self !== window.top;
 
@@ -32,7 +32,7 @@ const sampleCars: Car[] = [
     location: "Los Angeles, CA",
     fuel: "Hybrid",
     transmission: "Automatic",
-    image: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    media: ["https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"],
     condition: "Excellent",
     description: "Well-maintained Toyota Camry XSE with hybrid engine. Single owner, service records available.",
     vin: "1HGCM82633A004352",
@@ -48,7 +48,7 @@ const sampleCars: Car[] = [
     location: "New York, NY",
     fuel: "Gasoline",
     transmission: "Manual",
-    image: "https://images.unsplash.com/photo-1555215695-3004980ad54e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    media: ["https://images.unsplash.com/photo-1555215695-3004980ad54e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"],
     condition: "Good",
     description: "Reliable Volkswagen Vento with excellent fuel efficiency. Regular maintenance records.",
     vin: "WVWM113C3CA000222",
@@ -64,7 +64,7 @@ const sampleCars: Car[] = [
     location: "San Francisco, CA",
     fuel: "Gasoline",
     transmission: "Manual",
-    image: "https://images.unsplash.com/photo-1560958089-b8a1929cea89?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    media: ["https://images.unsplash.com/photo-1560958089-b8a1929cea89?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"],
     condition: "Good",
     description: "Compact and efficient Maruti Suzuki Baleno. Perfect for city driving.",
     vin: "WVWM113C3CA000532",
@@ -80,7 +80,7 @@ const sampleCars: Car[] = [
     location: "Chicago, IL",
     fuel: "Gasoline",
     transmission: "Automatic",
-    image: "https://images.unsplash.com/photo-1619767886558-efdc259cde1a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    media: ["https://images.unsplash.com/photo-1619767886558-efdc259cde1a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"],
     condition: "Very Good",
     description: "Honda City with automatic transmission. Comfortable and reliable sedan.",
     vin: "WVWM113C3CA000535",
@@ -112,7 +112,7 @@ const [filteredCars, setFilteredCars] = useState<Car[]>([]);
   const [isAddCarOpen, setIsAddCarOpen] = useState(false);
   const [isIntegrateOpen, setIsIntegrateOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [uploadedMedia, setUploadedMedia] = useState<string[]>([]);
   const [iframeCode, setIframeCode] = useState(`<iframe 
 src="${window.location.origin}" 
 title="Car Inventory - Embed" 
@@ -159,7 +159,7 @@ frameborder="0">
   
   const [newCar, setNewCar] = useState({
     make: '', model: '', year: '', price: '', mileage: '', location: '',
-    fuel: '', transmission: '', condition: '', description: '', image: '', vin: ''
+    fuel: '', transmission: '', condition: '', description: '', media: [] as string[], vin: ''
   });
   const [showFilters, setShowFilters] = useState(false);
   // Add state for edit mode and car to edit
@@ -321,9 +321,9 @@ frameborder="0">
         const reader = new FileReader();
         reader.onload = (e) => {
           const result = e.target?.result as string;
-          setUploadedImages(prev => [...prev, result]);
-          if (uploadedImages.length === 0) {
-            setNewCar(prev => ({ ...prev, image: result }));
+          setUploadedMedia(prev => [...prev, result]);
+          if (uploadedMedia.length === 0) {
+            setNewCar(prev => ({ ...prev, media: [result] }));
           }
         };
         reader.readAsDataURL(file);
@@ -332,14 +332,14 @@ frameborder="0">
   };
 
   const removeImage = (index: number) => {
-    setUploadedImages(prev => {
-      const newImages = prev.filter((_, i) => i !== index);
-      if (index === 0 && newImages.length > 0) {
-        setNewCar(prevCar => ({ ...prevCar, image: newImages[0] }));
-      } else if (newImages.length === 0) {
-        setNewCar(prevCar => ({ ...prevCar, image: '' }));
+    setUploadedMedia(prev => {
+      const newMedia = prev.filter((_, i) => i !== index);
+      if (index === 0 && newMedia.length > 0) {
+        setNewCar(prevCar => ({ ...prevCar, media: [newMedia[0]] }));
+      } else if (newMedia.length === 0) {
+        setNewCar(prevCar => ({ ...prevCar, media: [] }));
       }
-      return newImages;
+      return newMedia;
     });
   };
 
@@ -369,7 +369,7 @@ const handleAddCar = async () => {
     transmission: newCar.transmission || "Automatic",
     condition: newCar.condition || "Good",
     description: newCar.description || "No description provided.",
-    image: newCar.image || "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    media: newCar.media && newCar.media.length > 0 ? newCar.media : ["https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"],
     vin: newCar.vin || `VIN${Date.now()}`,
     availability: 'Available'
   };
@@ -377,13 +377,13 @@ const handleAddCar = async () => {
   try {
     const response = await axios.post('http://localhost:5000/api/cars', carToAdd); // 🚀 Send to backend
 
-    setCars(prev => [...prev, response.data]);
-    setFilteredCars(prev => [...prev, response.data]);
+    setCars(prev => [...prev, response.data as Car]);
+    setFilteredCars(prev => [...prev, response.data as Car]);
     setIsAddCarOpen(false);
-    setUploadedImages([]);
+    setUploadedMedia([]);
     setNewCar({
       make: '', model: '', year: '', price: '', mileage: '', location: '',
-      fuel: '', transmission: '', condition: '', description: '', image: '', vin: ''
+      fuel: '', transmission: '', condition: '', description: '', media: [] as string[], vin: ''
     });
 
     toast({
@@ -611,7 +611,7 @@ const handleTestDriveSubmit = async () => {
           const savedVehicle = await saveVehicleToBackend(vehicleData);
 
           // Map the saved vehicle data to the local Car type
-        const newVehicle = {
+        const newVehicle: Car = {
             id: savedVehicle._id || Date.now(),
             make: savedVehicle.brand || vehicleData.brand || "Unknown",
             model: savedVehicle.model || vehicleData.model || "Unknown",
@@ -621,7 +621,7 @@ const handleTestDriveSubmit = async () => {
             location: savedVehicle.location || "Location TBD",
             fuel: savedVehicle.fuelTypeDetails || vehicleData.fuelTypeDetails || "Gasoline",
             transmission: savedVehicle.transmissionTypeDetails || vehicleData.transmissionTypeDetails || "Automatic",
-            image: findFirstImageUrl(vehicleData.images) || findFirstImageUrl(savedVehicle.images) || "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            media: (vehicleData.media && Array.isArray(vehicleData.media) ? vehicleData.media : [vehicleData.media]).filter(Boolean),
             condition: savedVehicle.condition || vehicleData.condition || "Good",
             description: savedVehicle.description || vehicleData.description || "No description provided.",
             vin: savedVehicle.vin || vehicleData.vin || `VIN${Date.now()}`,

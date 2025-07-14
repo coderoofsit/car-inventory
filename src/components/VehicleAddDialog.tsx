@@ -296,7 +296,7 @@ const handleDialogClose = () => {
           ? editCar.additional.map((f: any) => typeof f === 'object' && f.id ? f : { id: `${Date.now()}-${Math.random()}`, value: typeof f === 'string' ? f : f.value })
           : [],
       });
-      setUploadedMedia(editCar.images || []);
+      setUploadedMedia(editCar.media || []);
     } else if (!isOpen) {
       resetForm();
     }
@@ -304,7 +304,7 @@ const handleDialogClose = () => {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogClose}>
-      <DialogContent className="relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[700px] max-w-none p-0 overflow-hidden">
+      <DialogContent className="relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg sm:w-[800px] sm:h-[700px] max-w-none p-0 overflow-hidden">
         <DialogTitle asChild>
           <span className="sr-only">{mode === 'edit' ? 'Edit Vehicle' : 'Add Vehicle'}</span>
         </DialogTitle>
@@ -336,7 +336,7 @@ const handleDialogClose = () => {
                 <TabsContent value="info" className="mt-0 space-y-1">
                   <div className="flex flex-col gap-4 items-center">
                     {/* VIN */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="vin" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">VIN: <span className="text-red-500">*</span></Label>
                       <div className="relative  w-2/3">
                         <Input
@@ -350,7 +350,7 @@ const handleDialogClose = () => {
                       </div>
                     </div>
                     {/* Manufacture Year (Month, Year) */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="manufactureMonth" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Manufacture Month/Year <span className="text-red-500">*</span></Label>
                       <div className='flex flex-row w-2/3 '>
                       <Select
@@ -383,7 +383,7 @@ const handleDialogClose = () => {
                      
                     </div>
                     {/* Brand */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="brand" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Brand: <span className="text-red-500">*</span></Label>
                       <Input
                         id="brand"
@@ -394,7 +394,7 @@ const handleDialogClose = () => {
                       />
                     </div>
                     {/* Model */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="model" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Model: <span className="text-red-500">*</span></Label>
                       <Input
                         id="model"
@@ -408,7 +408,7 @@ const handleDialogClose = () => {
 
 
                     {/* Registration Year (Month, Year) */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="registrationMonth" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Registration Month/Year </Label>
                       <div className='w-2/3 flex flex-row'><Select
                         value={vehicleData.registrationMonth}
@@ -439,7 +439,7 @@ const handleDialogClose = () => {
                       </div>
                     </div>
                     {/* Insurance Validity (Month, Year, Yes/No) */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="insuranceValidityMonth" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Insurance Validity Month</Label>
                       <div className='flex flex-row w-2/3'>
                       <Select
@@ -471,7 +471,7 @@ const handleDialogClose = () => {
                       </div>
                       
                     </div>
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
   <Label htmlFor="insuranceValid" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Insurance Valid?</Label>
   <Select 
     value={vehicleData.insuranceValid && vehicleData.insuranceValid.trim() !== '' ? vehicleData.insuranceValid : undefined} 
@@ -487,7 +487,7 @@ const handleDialogClose = () => {
   </Select>
 </div>
                     {/* Insurance Type */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="insuranceType" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Insurance Type:</Label>
                       <Input
                         id="insuranceType"
@@ -498,7 +498,7 @@ const handleDialogClose = () => {
                       />
                     </div>
                     {/* RTO */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="rto" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">RTO:</Label>
                       <Input
                         id="rto"
@@ -509,7 +509,7 @@ const handleDialogClose = () => {
                       />
                     </div>
                     {/* Engine Capacity (cc) */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="engineCapacity" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Engine Capacity (cc):</Label>
                       <Input
                         id="engineCapacity"
@@ -521,7 +521,7 @@ const handleDialogClose = () => {
                       />
                     </div>
                     {/* Description */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="description" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Description:</Label>
                       <Textarea
                         id="description"
@@ -537,7 +537,7 @@ const handleDialogClose = () => {
                 <TabsContent value="details" className="mt-0 space-y-4">
                   <div className="flex flex-col gap-4 items-center">
                     {/* Condition */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
   <Label htmlFor="condition" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">Condition: <span className="text-red-500">*</span></Label>
   <Select 
     value={vehicleData.condition && vehicleData.condition.trim() !== '' ? vehicleData.condition : undefined} 
@@ -555,7 +555,7 @@ const handleDialogClose = () => {
   </Select>
 </div>
                     {/* Selling Price */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="sellingPrice" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">Selling Price (INR): <span className="text-red-500">*</span></Label>
                       <Input
                         id="sellingPrice"
@@ -567,7 +567,7 @@ const handleDialogClose = () => {
                       />
                     </div>
                     {/* Status */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
   <Label htmlFor="status" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">Status: <span className="text-red-500">*</span></Label>
   <Select 
     value={vehicleData.status && vehicleData.status.trim() !== '' ? vehicleData.status : undefined} 
@@ -585,7 +585,7 @@ const handleDialogClose = () => {
   </Select>
 </div>
                     {/* Body Style */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
   <Label htmlFor="bodyStyleDetails" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">Body Style:</Label>
   <Select 
     value={vehicleData.bodyStyleDetails && vehicleData.bodyStyleDetails.trim() !== '' ? vehicleData.bodyStyleDetails : undefined} 
@@ -606,7 +606,7 @@ const handleDialogClose = () => {
   </Select>
 </div>
                     {/* Owner */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
   <Label htmlFor="ownerDetails" className="text-right w-1/3  text-sm font-semibold text-gray-700 whitespace-nowrap">Owner:</Label>
   <Select 
     value={vehicleData.ownerDetails && vehicleData.ownerDetails.trim() !== '' ? vehicleData.ownerDetails : undefined} 
@@ -625,7 +625,7 @@ const handleDialogClose = () => {
   </Select>
 </div>
                     {/* Home Test Drive Available? */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
   <Label htmlFor="homeTestDriveDetails" className="w-1/3  text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Home Test Drive Available?</Label>
   <Select 
     value={vehicleData.homeTestDriveDetails && vehicleData.homeTestDriveDetails.trim() !== '' ? vehicleData.homeTestDriveDetails : undefined} 
@@ -641,7 +641,7 @@ const handleDialogClose = () => {
   </Select>
 </div>
                     {/* KM run */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="kmRun" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">KM run: <span className="text-red-500">*</span></Label>
                       <Input
                         id="kmRun"
@@ -653,7 +653,7 @@ const handleDialogClose = () => {
                       />
                     </div>
                     {/* Fuel Type */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
   <Label htmlFor="fuelTypeDetails" className="text-right w-1/3 stext-sm font-semibold text-gray-700 whitespace-nowrap">Fuel Type: <span className="text-red-500">*</span></Label>
   <Select 
     value={vehicleData.fuelTypeDetails && vehicleData.fuelTypeDetails.trim() !== '' ? vehicleData.fuelTypeDetails : undefined} 
@@ -672,7 +672,7 @@ const handleDialogClose = () => {
   </Select>
 </div>
                     {/* Transmission Type */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
   <Label htmlFor="transmissionTypeDetails" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Transmission Type: <span className="text-red-500">*</span></Label>
   <Select 
     value={vehicleData.transmissionTypeDetails && vehicleData.transmissionTypeDetails.trim() !== '' ? vehicleData.transmissionTypeDetails : undefined} 
@@ -688,7 +688,7 @@ const handleDialogClose = () => {
   </Select>
 </div>
                     {/* Exterior Colour */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="exteriorColorDetails" className="w-1/3 text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Exterior Colour:</Label>
                       <Input
                         id="exteriorColorDetails"
@@ -699,7 +699,7 @@ const handleDialogClose = () => {
                       />
                     </div>
                     {/* Interior Color */}
-                    <div className="flex flex-row items-center justify-between w-[34rem] gap-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="interiorColorDetails" className="text-right w-1/3 text-sm font-semibold text-gray-700 whitespace-nowrap">Interior Color:</Label>
                       <Input
                         id="interiorColorDetails"

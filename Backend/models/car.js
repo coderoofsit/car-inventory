@@ -9,7 +9,7 @@ const carSchema = new mongoose.Schema({
   location: String,
   fuel: String,
   transmission: String,
-  images: [String], // Array of Cloudinary URLs
+  media: [String], // Array of Cloudinary URLs (images/videos)
   condition: String,
   description: String,
   vin: String,

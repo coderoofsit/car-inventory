@@ -45,8 +45,8 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
   if (!car) return null;
   const formatPrice = (price: string | number) => `₹${Number(price).toLocaleString()}`;
 
-  // Use car.images array, fallback to empty
-  const media: string[] = Array.isArray(car.images) && car.images.length > 0 ? car.images : [];
+  // Use car.media array, fallback to empty
+  const media: string[] = Array.isArray(car.media) && car.media.length > 0 ? car.media : [];
 
   // Overview fields using backend field names directly
   const overviewFields = [
@@ -68,30 +68,32 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl p-0 overflow-hidden h-[90vh]">
+      <DialogContent className="max-w-7xl p-0 overflow-hidden h-[70vh]">
         <DialogTitle className='sr-only'>Vehicle Details</DialogTitle>
         <DialogDescription className='sr-only'>
           View detailed information about this vehicle, including specifications, features, and media.
         </DialogDescription>
-        <div className="flex h-full">
+        <div className="flex flex-col md:flex-row h-full">
           {/* Left: Media Section */}
-          <div className="w-3/5 bg-gray-50 flex flex-col relative">
+          <div className="w-full md:w-3/5 bg-gray-50 flex flex-col relative">
             {/* Main media preview */}
             <div className="flex-1 relative flex items-center justify-center">
               {media.length > 0 && (
-                isVideo(media[mediaIndex]) ? (
-                  <video
-                    src={media[mediaIndex]}
-                    controls
-                    className="w-full h-full object-contain bg-black rounded-lg"
-                  />
-                ) : (
-                  <img
-                    src={media[mediaIndex]}
-                    alt={`Car media ${mediaIndex + 1}`}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                )
+                <div className="w-full h-0 pb-[56.25%] relative bg-black rounded-lg overflow-hidden">
+                  {isVideo(media[mediaIndex]) ? (
+                    <video
+                      src={media[mediaIndex]}
+                      controls
+                      className="absolute top-0 left-0 w-full h-full object-contain bg-black rounded-lg"
+                    />
+                  ) : (
+                    <img
+                      src={media[mediaIndex]}
+                      alt={`Car media ${mediaIndex + 1}`}
+                      className="absolute top-0 left-0 w-full h-full object-contain bg-black rounded-lg"
+                    />
+                  )}
+                </div>
               )}
               {media.length > 1 && (
                 <>
@@ -125,7 +127,7 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
           </div>
 
           {/* Right: Details Section */}
-          <div className="w-2/5 flex flex-col">
+          <div className="w-full md:w-2/5 flex flex-col">
             {/* Header */}
             <div className="p-6 border-b">
               <div className="flex items-center justify-between mb-4">
