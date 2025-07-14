@@ -13,6 +13,9 @@ interface CarDetailDialogProps {
 
 const isVideo = (url: string) => /\.(mp4|mov|avi|webm)$/i.test(url) || url.includes('video');
 
+// Utility function to capitalize first letter of each word
+const toTitleCase = (str: string) => str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+
 const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChange, loading }) => {
   const [tab, setTab] = useState('overview');
   const [mediaIndex, setMediaIndex] = useState(0);
@@ -122,19 +125,19 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
                 </Button>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-1">
-                {car.manufactureYear} {car.brand} {car.model}
+                {car.manufactureYear} {toTitleCase(car.brand || '')} {toTitleCase(car.model || '')}
               </h1>
               <div className="flex items-center gap-2 text-lg text-gray-700 font-normal mb-2">
                 <span>{car.kmRun ? `${(car.kmRun/1000).toFixed(car.kmRun%1000===0?0:1)}K km` : 'Not Specified'}</span>
                 <span>·</span>
-                <span>{car.fuelTypeDetails || 'Not Specified'}</span>
+                <span>{car.fuelTypeDetails ? toTitleCase(car.fuelTypeDetails) : 'Not Specified'}</span>
                 <span>·</span>
-                <span>{car.transmissionTypeDetails || 'Not Specified'}</span>
+                <span>{car.transmissionTypeDetails ? toTitleCase(car.transmissionTypeDetails) : 'Not Specified'}</span>
               </div>
               {car.homeTestDriveDetails && (
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
                   <Home className="h-5 w-5 text-black" />
-                  <span>Home Test Drive: {car.homeTestDriveDetails}</span>
+                  <span>Home Test Drive: {["yes", "y"].includes((car.homeTestDriveDetails || "").toString().trim().toLowerCase()) ? "Available" : "Unavailable"}</span>
                 </div>
               )}
               {/* Example: show how many people shortlisted if available */}

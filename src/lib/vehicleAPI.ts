@@ -41,10 +41,24 @@ export async function saveVehicleToBackend(vehicleData: any): Promise<any> {
  * Usage:
  *   import { fetchVehiclesFromBackend } from './vehicleAPI';
  */
-export async function fetchVehiclesFromBackend(): Promise<any[]> {
+export async function fetchVehiclesFromBackend(filters?: Record<string, any>): Promise<any[]> {
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-  const fetchUrl = `${backendUrl}/api/cars`;
-
+  let fetchUrl = `${backendUrl}/api/cars`;
+  if (filters && Object.keys(filters).length > 0) {
+    const params = new URLSearchParams();
+    if (filters.make) params.append('make', filters.make);
+    if (filters.model) params.append('model', filters.model);
+    if (filters.fuel) params.append('fuel', filters.fuel);
+    if (filters.transmission) params.append('transmission', filters.transmission);
+    if (filters.ownership) params.append('ownership', filters.ownership);
+    if (filters.minYear) params.append('minYear', filters.minYear);
+    if (filters.maxYear) params.append('maxYear', filters.maxYear);
+    if (filters.minPrice) params.append('minPrice', filters.minPrice);
+    if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
+    if (filters.minMileage) params.append('minMileage', filters.minMileage);
+    if (filters.maxMileage) params.append('maxMileage', filters.maxMileage);
+    fetchUrl += `?${params.toString()}`;
+  }
   try {
     const response = await fetch(fetchUrl, {
       method: 'GET',
@@ -52,12 +66,10 @@ export async function fetchVehiclesFromBackend(): Promise<any[]> {
         'Content-Type': 'application/json',
       },
     });
-
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
-
     const vehicles = await response.json();
     return vehicles;
   } catch (error) {

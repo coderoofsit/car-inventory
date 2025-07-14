@@ -38,6 +38,59 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Add filtering support to GET /api/cars
+router.get('/cars', async (req, res) => {
+  try {
+    const query = {};
+    // Map query params to MongoDB query
+    if (req.query.brand) {
+      if (Array.isArray(req.query.brand)) {
+        query["brand"] = { $in: req.query.brand.map(b => new RegExp(`^${b}$`, 'i')) };
+      } else {
+        query["brand"] = new RegExp(`^${req.query.brand}$`, 'i');
+      }
+    }
+    if (req.query.model) {
+      if (Array.isArray(req.query.model)) {
+        query["model"] = { $in: req.query.model.map(m => new RegExp(`^${m}$`, 'i')) };
+      } else {
+        query["model"] = new RegExp(`^${req.query.model}$`, 'i');
+      }
+    }
+    if (req.query.fuel) {
+      if (Array.isArray(req.query.fuel)) {
+        query["fuelTypeDetails"] = { $in: req.query.fuel.map(f => new RegExp(`^${f}$`, 'i')) };
+      } else {
+        query["fuelTypeDetails"] = new RegExp(`^${req.query.fuel}$`, 'i');
+      }
+    }
+    if (req.query.transmission) query["transmissionTypeDetails"] = req.query.transmission;
+    if (req.query.ownership) query["ownerDetails"] = req.query.ownership;
+    if (req.query.minYear || req.query.maxYear) {
+      query["manufactureYear"] = {};
+      if (req.query.minYear) query["manufactureYear"].$gte = parseInt(req.query.minYear);
+      if (req.query.maxYear) query["manufactureYear"].$lte = parseInt(req.query.maxYear);
+    }
+    if (req.query.minPrice || req.query.maxPrice) {
+      query["sellingPrice"] = {};
+      if (req.query.minPrice) query["sellingPrice"].$gte = parseInt(req.query.minPrice);
+      if (req.query.maxPrice) query["sellingPrice"].$lte = parseInt(req.query.maxPrice);
+    }
+    if (req.query.minMileage || req.query.maxMileage) {
+      query["kmRun"] = {};
+      if (req.query.minMileage) query["kmRun"].$gte = parseInt(req.query.minMileage);
+      if (req.query.maxMileage) query["kmRun"].$lte = parseInt(req.query.maxMileage);
+    }
+    // Add more filters as needed
+    // Log the final query for debugging
+    console.log('Car filter query:', JSON.stringify(query, null, 2));
+    const cars = await Car.find(query);
+    res.json(cars);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST new car
 router.post('/', async (req, res) => {
   console.log('[carRoutes] POST / - Add new car');

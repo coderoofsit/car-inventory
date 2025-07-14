@@ -18,6 +18,7 @@ import CarList from "@/components/CarList";
 import { saveVehicleToBackend, fetchVehiclesFromBackend, fetchCarById } from "@/lib/vehicleAPI";
 import CarDetailDialog from "@/components/CarDetailDialog";
 import { findFirstImageUrl, Car } from "@/lib/utils";
+import VehicleFilterComponent, { VehicleFilters } from '@/components/VehicleFilterComponent';
 const isEmbedded = window.self !== window.top;
 
 const sampleCars: Car[] = [
@@ -91,7 +92,7 @@ const Index = () => {
 const [cars, setCars] = useState<Car[]>([]);
 const [filteredCars, setFilteredCars] = useState<Car[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMake, setSelectedMake] = useState('all');
+  const [selectedMake, setSelectedMake] = useState<string>('all');
   const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
   const [selectedCarDetails, setSelectedCarDetails] = useState<any>(null);
   const [loadingCarDetails, setLoadingCarDetails] = useState(false);
@@ -124,59 +125,110 @@ frameborder="0">
   const [showTestDriveForm, setShowTestDriveForm] = useState(false);
   
   // Filter states
-  const [filters, setFilters] = useState({
-    minPrice: '',
-    maxPrice: '',
-    minYear: '',
-    maxYear: '',
-    fuelType: 'all',
-    transmission: 'all',
-    condition: 'all',
-    minMileage: '',
-    maxMileage: ''
+  const [filters, setFilters] = useState<VehicleFilters>({
+    brands: [],
+    models: [],
+    bodyStyles: [],
+    fuelTypes: [],
+    transmission: '',
+    ownership: '',
+    yearRange: { min: 2012, max: 2020 },
+    priceRange: { min: 0, max: 1000000 },
+    mileageRange: { min: 25000, max: 78000 }
   });
+  // Add pendingFilters for the filter panel
+  const [pendingFilters, setPendingFilters] = useState<VehicleFilters>(filters);
   
   const [newCar, setNewCar] = useState({
     make: '', model: '', year: '', price: '', mileage: '', location: '',
     fuel: '', transmission: '', condition: '', description: '', image: '', vin: ''
   });
+  const [showFilters, setShowFilters] = useState(false);
+  // Fetch all cars on mount
   React.useEffect(() => {
     const loadCars = async () => {
       try {
         const carsData = await fetchVehiclesFromBackend();
-        
-        // Map backend data to frontend Car interface
-        const mappedCars: Car[] = carsData.map((car: any) => ({
-          id: car._id || Date.now(),
-          make: car.brand || car.make || "Unknown",
-          model: car.model || "Unknown",
-          year: parseInt(car.manufactureYear || car.year) || 0,
-          price: parseInt(car.sellingPrice || car.price) || 0,
-          mileage: parseInt(car.kmRun || car.mileage) || 0,
-          location: car.location || "Location TBD",
-          fuel: car.fuelTypeDetails || car.fuel || "Gasoline",
-          transmission: car.transmissionTypeDetails || car.transmission || "Automatic",
-          image: findFirstImageUrl(car.images) || car.image || "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-          condition: car.condition || "Good",
-          description: car.description || "No description provided.",
-          vin: car.vin || `VIN${Date.now()}`,
-          availability: car.availability || "Available"
-        }));
-        
-        setCars(mappedCars);
-        setFilteredCars(mappedCars);
+        setCars(carsData);
+        setFilteredCars(carsData);
       } catch (err) {
-      console.error('Failed to fetch cars:', err);
+        console.error('Failed to fetch cars:', err);
         toast({
           title: "Error Loading Vehicles",
           description: "Failed to load vehicles from database. Please refresh the page.",
           variant: "destructive"
-    });
+        });
       }
     };
-    
     loadCars();
-}, []);
+  }, []);
+
+  // Remove local filtering logic (use backend only)
+  // Remove useEffect that filters cars based on filters
+
+  // Handler for Apply Filters
+  const handleApplyFilters = async () => {
+    // Map pendingFilters to backend query params
+    const params: Record<string, any> = {};
+    if (pendingFilters.brands && pendingFilters.brands.length > 0) params.brand = pendingFilters.brands;
+    if (pendingFilters.models.length > 0) params.model = pendingFilters.models;
+    if (pendingFilters.fuelTypes.length > 0) params.fuel = pendingFilters.fuelTypes;
+    if (pendingFilters.transmission) params.transmission = pendingFilters.transmission;
+    if (pendingFilters.ownership) params.ownership = pendingFilters.ownership;
+    if (pendingFilters.yearRange) {
+      params.minYear = pendingFilters.yearRange.min;
+      params.maxYear = pendingFilters.yearRange.max;
+    }
+    if (pendingFilters.priceRange) {
+      params.minPrice = pendingFilters.priceRange.min;
+      params.maxPrice = pendingFilters.priceRange.max;
+    }
+    if (pendingFilters.mileageRange) {
+      params.minMileage = pendingFilters.mileageRange.min;
+      params.maxMileage = pendingFilters.mileageRange.max;
+    }
+    try {
+      const carsData = await fetchVehiclesFromBackend(params);
+      setCars(carsData);
+      setFilteredCars(carsData);
+      setShowFilters(false);
+    } catch (err) {
+      toast({
+        title: "Error Applying Filters",
+        description: "Failed to fetch filtered vehicles from database.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handler for Clear Filters
+  const handleClearFilters = async () => {
+    const newDefault = {
+      brands: [],
+      models: [],
+      bodyStyles: [],
+      fuelTypes: [],
+      transmission: '',
+      ownership: '',
+      yearRange: { min: minYear, max: maxYear },
+      priceRange: { min: minPrice, max: maxPrice },
+      mileageRange: { min: minMileage, max: maxMileage }
+    };
+    setPendingFilters(newDefault);
+    setFilters(newDefault);
+    try {
+      const carsData = await fetchVehiclesFromBackend();
+      setCars(carsData);
+      setFilteredCars(carsData);
+      setShowFilters(false);
+    } catch (err) {
+      toast({
+        title: "Error Clearing Filters",
+        description: "Failed to fetch all vehicles from database.",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Fetch car details when selectedCarId changes
   React.useEffect(() => {
@@ -192,28 +244,27 @@ frameborder="0">
   }, [selectedCarId]);
 
 
-  // Filter cars based on all criteria
+  // When filters change, update pendingFilters as well (if filters are reset externally)
   React.useEffect(() => {
-    const filtered = cars.filter(car => {
-      const matchesSearch = (car.make?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                           (car.model?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-      const matchesMake = selectedMake === 'all' || (car.make?.toLowerCase() || '') === selectedMake.toLowerCase();
-      const matchesMinPrice = !filters.minPrice || car.price >= parseInt(filters.minPrice);
-      const matchesMaxPrice = !filters.maxPrice || car.price <= parseInt(filters.maxPrice);
-      const matchesMinYear = !filters.minYear || car.year >= parseInt(filters.minYear);
-      const matchesMaxYear = !filters.maxYear || car.year <= parseInt(filters.maxYear);
-      const matchesFuel = filters.fuelType === 'all' || (car.fuel?.toLowerCase() || '') === filters.fuelType.toLowerCase();
-      const matchesTransmission = filters.transmission === 'all' || (car.transmission?.toLowerCase() || '') === filters.transmission.toLowerCase();
-      const matchesCondition = filters.condition === 'all' || (car.condition?.toLowerCase() || '') === filters.condition.toLowerCase();
-      const matchesMinMileage = !filters.minMileage || car.mileage >= parseInt(filters.minMileage);
-      const matchesMaxMileage = !filters.maxMileage || car.mileage <= parseInt(filters.maxMileage);
-      
-      return matchesSearch && matchesMake && matchesMinPrice && matchesMaxPrice && 
-             matchesMinYear && matchesMaxYear && matchesFuel && matchesTransmission && 
-             matchesCondition && matchesMinMileage && matchesMaxMileage;
-    });
-    setFilteredCars(filtered);
-  }, [searchTerm, selectedMake, cars, filters]);
+    setPendingFilters(filters);
+  }, [filters]);
+
+  // When cars change (after fetch), reset filters to new min/max
+  React.useEffect(() => {
+    const newDefault = {
+      brands: [],
+      models: [],
+      bodyStyles: [],
+      fuelTypes: [],
+      transmission: '',
+      ownership: '',
+      yearRange: { min: minYear, max: maxYear },
+      priceRange: { min: minPrice, max: maxPrice },
+      mileageRange: { min: minMileage, max: maxMileage }
+    };
+    setFilters(newDefault);
+    setPendingFilters(newDefault);
+  }, [minYear, maxYear, minPrice, maxPrice, minMileage, maxMileage]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -246,17 +297,17 @@ frameborder="0">
 
   const resetFilters = () => {
     setFilters({
-      minPrice: '',
-      maxPrice: '',
-      minYear: '',
-      maxYear: '',
-      fuelType: 'all', // Use 'all' instead of empty string
-      transmission: 'all', // Use 'all' instead of empty string
-      condition: 'all', // Use 'all' instead of empty string
-      minMileage: '',
-      maxMileage: ''
+      brands: [],
+      models: [],
+      bodyStyles: [],
+      fuelTypes: [],
+      transmission: '',
+      ownership: '',
+      yearRange: { min: minYear, max: maxYear },
+      priceRange: { min: minPrice, max: maxPrice },
+      mileageRange: { min: minMileage, max: maxMileage }
     });
-    setSelectedMake('all'); // Reset this too
+    // setSelectedMake('all'); // Remove if not needed
   };
 
 const handleAddCar = async () => {
@@ -431,6 +482,12 @@ const handleTestDriveSubmit = async () => {
 
   const uniqueMakes = Array.from(new Set(cars.map(car => car.make).filter(Boolean)));
 
+  // Compute unique filter options from car data
+  const brandOptions = Array.from(new Set(cars.map(car => car.brand || car.make).filter(Boolean))).map(brand => ({ value: brand, label: brand }));
+  const modelOptions = Array.from(new Set(cars.map(car => car.model).filter(Boolean))).map(model => ({ value: model, label: model }));
+  const fuelTypeOptions = Array.from(new Set(cars.map(car => car.fuel).filter(Boolean))).map(fuel => ({ value: fuel, label: fuel }));
+  const transmissionOptions = Array.from(new Set(cars.map(car => car.transmission).filter(Boolean))).map(trans => ({ value: trans, label: trans }));
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -575,13 +632,14 @@ const handleTestDriveSubmit = async () => {
       </header>
 
       {/* Search and Filter Bar */}
+
       <div className="bg-white border-b border-gray-200 py-4">
         <div className="container mx-auto px-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="text-sm text-gray-600">
               Showing {filteredCars.length} - {Math.min(6, filteredCars.length)} of {filteredCars.length} results
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="flex flex-col sm:flex-row gap-4 items-center relative">
               <div className="relative flex-1 sm:w-80">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
@@ -591,191 +649,29 @@ const handleTestDriveSubmit = async () => {
                   className="pl-10"
                 />
               </div>
-              
-              <Sheet open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    Filters
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-80 sm:w-96">
-                  <SheetHeader>
-                    <SheetTitle>Filter Cars</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-6 space-y-6">
-                    {/* Price Range */}
-                    <div>
-                      <Label className="text-base font-semibold">Price Range</Label>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        <div>
-                          <Label htmlFor="minPrice" className="text-sm">Min Price</Label>
-                          <Input
-                            id="minPrice"
-                            type="number"
-                            placeholder="₹0"
-                            value={filters.minPrice}
-                            onChange={(e) => setFilters({...filters, minPrice: e.target.value})}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="maxPrice" className="text-sm">Max Price</Label>
-                          <Input
-                            id="maxPrice"
-                            type="number"
-                            placeholder="₹10,00,000"
-                            value={filters.maxPrice}
-                            onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Year Range */}
-                    <div>
-                      <Label className="text-base font-semibold">Year Range</Label>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        <div>
-                          <Label htmlFor="minYear" className="text-sm">Min Year</Label>
-                          <Input
-                            id="minYear"
-                            type="number"
-                            placeholder="2000"
-                            value={filters.minYear}
-                            onChange={(e) => setFilters({...filters, minYear: e.target.value})}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="maxYear" className="text-sm">Max Year</Label>
-                          <Input
-                            id="maxYear"
-                            type="number"
-                            placeholder="2024"
-                            value={filters.maxYear}
-                            onChange={(e) => setFilters({...filters, maxYear: e.target.value})}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Mileage Range */}
-                    <div>
-                      <Label className="text-base font-semibold">Mileage Range</Label>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        <div>
-                          <Label htmlFor="minMileage" className="text-sm">Min Mileage</Label>
-                          <Input
-                            id="minMileage"
-                            type="number"
-                            placeholder="0"
-                            value={filters.minMileage}
-                            onChange={(e) => setFilters({...filters, minMileage: e.target.value})}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="maxMileage" className="text-sm">Max Mileage</Label>
-                          <Input
-                            id="maxMileage"
-                            type="number"
-                            placeholder="200,000"
-                            value={filters.maxMileage}
-                            onChange={(e) => setFilters({...filters, maxMileage: e.target.value})}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Fuel Type */}
-                    <div>
-                      <Label className="text-base font-semibold">Fuel Type</Label>
-  <Select 
-    value={filters.fuelType && filters.fuelType.trim() !== '' ? filters.fuelType : "all"} 
-    onValueChange={(value) => setFilters({...filters, fuelType: value})}
-  >
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="All Fuel Types" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Fuel Types</SelectItem>
-                          <SelectItem value="gasoline">Gasoline</SelectItem>
-                          <SelectItem value="diesel">Diesel</SelectItem>
-                          <SelectItem value="hybrid">Hybrid</SelectItem>
-                          <SelectItem value="electric">Electric</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-
-                    {/* Transmission */}
-                    <div>
-                      <Label className="text-base font-semibold">Transmission</Label>
-  <Select 
-    value={filters.transmission && filters.transmission.trim() !== '' ? filters.transmission : "all"} 
-    onValueChange={(value) => setFilters({...filters, transmission: value})}
-  >
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="All Transmissions" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Transmissions</SelectItem>
-                          <SelectItem value="automatic">Automatic</SelectItem>
-                          <SelectItem value="manual">Manual</SelectItem>
-                          <SelectItem value="cvt">CVT</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Condition */}
-                    <div>
-                      <Label className="text-base font-semibold">Condition</Label>
-  <Select 
-    value={filters.condition && filters.condition.trim() !== '' ? filters.condition : "all"} 
-    onValueChange={(value) => setFilters({...filters, condition: value})}
-  >
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="All Conditions" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Conditions</SelectItem>
-                          <SelectItem value="excellent">Excellent</SelectItem>
-                          <SelectItem value="very good">Very Good</SelectItem>
-                          <SelectItem value="good">Good</SelectItem>
-                          <SelectItem value="fair">Fair</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex gap-2 pt-4">
-                      <Button onClick={resetFilters} variant="outline" className="flex-1">
-                        Reset Filters
-                      </Button>
-                      <Button onClick={() => setIsFiltersOpen(false)} className="flex-1">
-                        Apply Filters
-                      </Button>
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
-              
-              <Select 
-  value={selectedMake && selectedMake.trim() !== '' ? selectedMake : "all"} 
-  onValueChange={setSelectedMake}
->
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="No Sort" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Makes</SelectItem>
-                  {uniqueMakes.map(make => (
-      <SelectItem key={`make-${make}`} value={make}>{make}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
+              <Button variant="outline" className="flex items-center gap-2" onClick={() => setShowFilters(v => !v)}>
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
             </div>
           </div>
         </div>
       </div>
+
+      {showFilters && (
+        <div className="max-w-7xl mx-auto w-full mt-2 rounded-b-xl border-t-0 shadow-lg">
+          <VehicleFilterComponent 
+            filters={pendingFilters} 
+            setFilters={setPendingFilters}
+            onApply={handleApplyFilters}
+            onClear={handleClearFilters}
+            brandOptions={brandOptions}
+            modelOptions={modelOptions}
+            fuelTypeOptions={fuelTypeOptions}
+            transmissionOptions={transmissionOptions}
+          />
+        </div>
+      )}
 
       {/* Car Grid */}
       <div className="container mx-auto px-4 py-8">
@@ -797,3 +693,4 @@ const handleTestDriveSubmit = async () => {
 };
 
 export default Index;
+
