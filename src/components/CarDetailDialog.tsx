@@ -22,6 +22,7 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
   const [tab, setTab] = useState('overview');
   console.log('CarDetailDialog open:', open, 'car:', car);
   const [mediaIndex, setMediaIndex] = useState(0);
+  const isEmbedded = typeof window !== 'undefined' && window.self !== window.top;
   if (loading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -132,9 +133,11 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
                   <ArrowLeft className="mr-2 h-5 w-5 text-black" /> Back
                 </Button>
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" className="p-2" onClick={onEdit}>
-                    Edit
-                  </Button>
+                  {!isEmbedded && (
+                    <Button variant="ghost" className="p-2" onClick={onEdit}>
+                      Edit
+                    </Button>
+                  )}
                   <Button variant="ghost" className="p-2">
                     <Heart className="h-6 w-6 text-black" />
                   </Button>
