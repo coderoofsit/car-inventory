@@ -218,7 +218,12 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
                     >
                       Contact Us
                     </Button>
-                    <Button className="flex-1 bg-blue-600 text-white" onClick={onTestDrive}>Book a Test Drive</Button>
+                    <Button
+                      className="flex-1 bg-blue-600 text-white transition-colors duration-150 hover:bg-blue-700 hover:text-white active:bg-blue-800 active:text-white focus:ring-2 focus:ring-blue-300"
+                      onClick={onTestDrive}
+                    >
+                      Book a Test Drive
+                    </Button>
                   </div>
                 </TabsContent>
                 <TabsContent value="description" className="p-6">
