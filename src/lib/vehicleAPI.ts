@@ -55,8 +55,8 @@ export async function fetchVehiclesFromBackend(filters?: Record<string, any>): P
     if (filters.maxYear) params.append('maxYear', filters.maxYear);
     if (filters.minPrice) params.append('minPrice', filters.minPrice);
     if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
-    if (filters.minMileage) params.append('minMileage', filters.minMileage);
-    if (filters.maxMileage) params.append('maxMileage', filters.maxMileage);
+    if (filters.minKmRun) params.append('minKmRun', filters.minKmRun);
+    if (filters.maxKmRun) params.append('maxKmRun', filters.maxKmRun);
     fetchUrl += `?${params.toString()}`;
   }
   try {
@@ -83,4 +83,25 @@ export async function fetchCarById(id: string) {
   const res = await fetch(`${backendUrl}/api/cars/${id}`);
   if (!res.ok) throw new Error('Failed to fetch car');
   return await res.json();
+}
+
+export async function fetchFilterMetadataFromBackend(): Promise<any> {
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const url = `${backendUrl}/api/filters`;
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching filter metadata from backend:', error);
+    throw error;
+  }
 } 

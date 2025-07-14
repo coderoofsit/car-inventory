@@ -14,6 +14,7 @@ export interface Car {
   year: number;
   price: number;
   mileage: number;
+  kmRun?: number;
   location: string;
   fuel: string;
   transmission: string;

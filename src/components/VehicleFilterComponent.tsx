@@ -22,7 +22,7 @@ export interface VehicleFilters {
   ownership: string;
   yearRange: RangeFilter;
   priceRange: RangeFilter;
-  mileageRange: RangeFilter;
+  kmRunRange: RangeFilter;
 }
 
 interface VehicleFilterComponentProps {
@@ -224,7 +224,7 @@ const VehicleFilterComponent: React.FC<VehicleFilterComponentProps> = ({ filters
     ownership: '',
     yearRange: { min: 2012, max: 2020 },
     priceRange: { min: 0, max: 1000000 },
-    mileageRange: { min: 25000, max: 78000 }
+    kmRunRange: { min: 25000, max: 78000 }
   };
 
   const handleClear = () => {
@@ -333,11 +333,11 @@ const VehicleFilterComponent: React.FC<VehicleFilterComponentProps> = ({ filters
         />
 
         <RangeSlider
-          label="Mileage"
+          label="KM Run"
           min={0}
           max={200000}
-          value={filters.mileageRange}
-          onChange={(min, max) => { handleRangeChange('mileageRange', 'min', min); handleRangeChange('mileageRange', 'max', max); }}
+          value={filters.kmRunRange}
+          onChange={(min, max) => { handleRangeChange('kmRunRange', 'min', min); handleRangeChange('kmRunRange', 'max', max); }}
           formatter={formatMileage}
         />
       </div>

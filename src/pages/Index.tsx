@@ -15,7 +15,7 @@ import { Search, Plus, Filter, Heart, Eye, Code, Globe, Copy, CheckCircle, Uploa
 import { toast } from "@/hooks/use-toast";
 import VehicleAddDialog from "@/components/VehicleAddDialog";
 import CarList from "@/components/CarList";
-import { saveVehicleToBackend, fetchVehiclesFromBackend, fetchCarById } from "@/lib/vehicleAPI";
+import { saveVehicleToBackend, fetchVehiclesFromBackend, fetchCarById, fetchFilterMetadataFromBackend } from "@/lib/vehicleAPI";
 import CarDetailDialog from "@/components/CarDetailDialog";
 import { findFirstImageUrl, Car } from "@/lib/utils";
 import VehicleFilterComponent, { VehicleFilters } from '@/components/VehicleFilterComponent';
@@ -123,45 +123,62 @@ frameborder="0">
   });
   const [showContactForm, setShowContactForm] = useState(false);
   const [showTestDriveForm, setShowTestDriveForm] = useState(false);
-  
-  // Filter states
-  const [filters, setFilters] = useState<VehicleFilters>({
+
+  // Filter metadata state
+  const [filterMeta, setFilterMeta] = useState<any>(null);
+
+  // Default filter state using dynamic min/max
+  const getDefaultFilterState = (meta: any) => ({
     brands: [],
     models: [],
     bodyStyles: [],
     fuelTypes: [],
     transmission: '',
     ownership: '',
-    yearRange: { min: 2012, max: 2020 },
-    priceRange: { min: 0, max: 1000000 },
-    mileageRange: { min: 25000, max: 78000 }
+    yearRange: { min: meta?.minYear ?? 2000, max: meta?.maxYear ?? 2024 },
+    priceRange: { min: meta?.minPrice ?? 0, max: meta?.maxPrice ?? 1000000 },
+    kmRunRange: { min: meta?.minKmRun ?? 0, max: meta?.maxKmRun ?? 200000 }
   });
-  // Add pendingFilters for the filter panel
-  const [pendingFilters, setPendingFilters] = useState<VehicleFilters>(filters);
+  
+  // Filter states
+  const [filters, setFilters] = useState<VehicleFilters>(getDefaultFilterState({}));
+  const [pendingFilters, setPendingFilters] = useState<VehicleFilters>(getDefaultFilterState({}));
   
   const [newCar, setNewCar] = useState({
     make: '', model: '', year: '', price: '', mileage: '', location: '',
     fuel: '', transmission: '', condition: '', description: '', image: '', vin: ''
   });
   const [showFilters, setShowFilters] = useState(false);
-  // Fetch all cars on mount
+  // Fetch filter metadata and all cars on mount
   React.useEffect(() => {
-    const loadCars = async () => {
+    const loadMetaAndCars = async () => {
       try {
+        const meta = await fetchFilterMetadataFromBackend();
+        setFilterMeta(meta);
+        setFilters(getDefaultFilterState(meta));
+        setPendingFilters(getDefaultFilterState(meta));
         const carsData = await fetchVehiclesFromBackend();
         setCars(carsData);
         setFilteredCars(carsData);
       } catch (err) {
-        console.error('Failed to fetch cars:', err);
+        console.error('Failed to fetch filter metadata or cars:', err);
         toast({
-          title: "Error Loading Vehicles",
-          description: "Failed to load vehicles from database. Please refresh the page.",
+          title: "Error Loading Data",
+          description: "Failed to load filter metadata or vehicles from database. Please refresh the page.",
           variant: "destructive"
-        });
+    });
       }
     };
-    loadCars();
-  }, []);
+    loadMetaAndCars();
+}, []);
+
+  // When cars change (after fetch), reset filters to new min/max if meta is available
+  React.useEffect(() => {
+    if (!filterMeta) return;
+    const newDefault = getDefaultFilterState(filterMeta);
+    setFilters(newDefault);
+    setPendingFilters(newDefault);
+  }, [filterMeta]);
 
   // Remove local filtering logic (use backend only)
   // Remove useEffect that filters cars based on filters
@@ -171,8 +188,9 @@ frameborder="0">
     // Map pendingFilters to backend query params
     const params: Record<string, any> = {};
     if (pendingFilters.brands && pendingFilters.brands.length > 0) params.brand = pendingFilters.brands;
-    if (pendingFilters.models.length > 0) params.model = pendingFilters.models;
-    if (pendingFilters.fuelTypes.length > 0) params.fuel = pendingFilters.fuelTypes;
+    if (pendingFilters.models && pendingFilters.models.length > 0) params.model = pendingFilters.models;
+    if (pendingFilters.bodyStyles && pendingFilters.bodyStyles.length > 0) params.bodyStyle = pendingFilters.bodyStyles;
+    if (pendingFilters.fuelTypes && pendingFilters.fuelTypes.length > 0) params.fuel = pendingFilters.fuelTypes;
     if (pendingFilters.transmission) params.transmission = pendingFilters.transmission;
     if (pendingFilters.ownership) params.ownership = pendingFilters.ownership;
     if (pendingFilters.yearRange) {
@@ -183,9 +201,9 @@ frameborder="0">
       params.minPrice = pendingFilters.priceRange.min;
       params.maxPrice = pendingFilters.priceRange.max;
     }
-    if (pendingFilters.mileageRange) {
-      params.minMileage = pendingFilters.mileageRange.min;
-      params.maxMileage = pendingFilters.mileageRange.max;
+    if (pendingFilters.kmRunRange) {
+      params.minKmRun = pendingFilters.kmRunRange.min;
+      params.maxKmRun = pendingFilters.kmRunRange.max;
     }
     try {
       const carsData = await fetchVehiclesFromBackend(params);
@@ -203,17 +221,7 @@ frameborder="0">
 
   // Handler for Clear Filters
   const handleClearFilters = async () => {
-    const newDefault = {
-      brands: [],
-      models: [],
-      bodyStyles: [],
-      fuelTypes: [],
-      transmission: '',
-      ownership: '',
-      yearRange: { min: minYear, max: maxYear },
-      priceRange: { min: minPrice, max: maxPrice },
-      mileageRange: { min: minMileage, max: maxMileage }
-    };
+    const newDefault = getDefaultFilterState(filterMeta);
     setPendingFilters(newDefault);
     setFilters(newDefault);
     try {
@@ -230,20 +238,6 @@ frameborder="0">
     }
   };
 
-  // Fetch car details when selectedCarId changes
-  React.useEffect(() => {
-    if (selectedCarId) {
-      setLoadingCarDetails(true);
-      fetchCarById(selectedCarId)
-        .then(car => setSelectedCarDetails(car))
-        .catch(() => setSelectedCarDetails(null))
-        .finally(() => setLoadingCarDetails(false));
-    } else {
-      setSelectedCarDetails(null);
-    }
-  }, [selectedCarId]);
-
-
   // When filters change, update pendingFilters as well (if filters are reset externally)
   React.useEffect(() => {
     setPendingFilters(filters);
@@ -258,13 +252,13 @@ frameborder="0">
       fuelTypes: [],
       transmission: '',
       ownership: '',
-      yearRange: { min: minYear, max: maxYear },
-      priceRange: { min: minPrice, max: maxPrice },
-      mileageRange: { min: minMileage, max: maxMileage }
+      yearRange: { min: filterMeta?.minYear ?? 2000, max: filterMeta?.maxYear ?? 2024 },
+      priceRange: { min: filterMeta?.minPrice ?? 0, max: filterMeta?.maxPrice ?? 1000000 },
+      kmRunRange: { min: filterMeta?.minKmRun ?? 0, max: filterMeta?.maxKmRun ?? 200000 }
     };
     setFilters(newDefault);
     setPendingFilters(newDefault);
-  }, [minYear, maxYear, minPrice, maxPrice, minMileage, maxMileage]);
+  }, [filterMeta]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -296,17 +290,7 @@ frameborder="0">
   };
 
   const resetFilters = () => {
-    setFilters({
-      brands: [],
-      models: [],
-      bodyStyles: [],
-      fuelTypes: [],
-      transmission: '',
-      ownership: '',
-      yearRange: { min: minYear, max: maxYear },
-      priceRange: { min: minPrice, max: maxPrice },
-      mileageRange: { min: minMileage, max: maxMileage }
-    });
+    setFilters(getDefaultFilterState(filterMeta));
     // setSelectedMake('all'); // Remove if not needed
   };
 
@@ -480,14 +464,6 @@ const handleTestDriveSubmit = async () => {
     }).format(price);
   };
 
-  const uniqueMakes = Array.from(new Set(cars.map(car => car.make).filter(Boolean)));
-
-  // Compute unique filter options from car data
-  const brandOptions = Array.from(new Set(cars.map(car => car.brand || car.make).filter(Boolean))).map(brand => ({ value: brand, label: brand }));
-  const modelOptions = Array.from(new Set(cars.map(car => car.model).filter(Boolean))).map(model => ({ value: model, label: model }));
-  const fuelTypeOptions = Array.from(new Set(cars.map(car => car.fuel).filter(Boolean))).map(fuel => ({ value: fuel, label: fuel }));
-  const transmissionOptions = Array.from(new Set(cars.map(car => car.transmission).filter(Boolean))).map(trans => ({ value: trans, label: trans }));
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -650,25 +626,25 @@ const handleTestDriveSubmit = async () => {
                 />
               </div>
               <Button variant="outline" className="flex items-center gap-2" onClick={() => setShowFilters(v => !v)}>
-                <Filter className="h-4 w-4" />
+                    <Filter className="h-4 w-4" />
                 Filter
-              </Button>
+                      </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {showFilters && (
+      {showFilters && filterMeta && (
         <div className="max-w-7xl mx-auto w-full mt-2 rounded-b-xl border-t-0 shadow-lg">
           <VehicleFilterComponent 
             filters={pendingFilters} 
             setFilters={setPendingFilters}
             onApply={handleApplyFilters}
             onClear={handleClearFilters}
-            brandOptions={brandOptions}
-            modelOptions={modelOptions}
-            fuelTypeOptions={fuelTypeOptions}
-            transmissionOptions={transmissionOptions}
+            brandOptions={filterMeta.brands.map((b: string) => ({ value: b, label: b }))}
+            modelOptions={filterMeta.models.map((m: string) => ({ value: m, label: m }))}
+            fuelTypeOptions={filterMeta.fuelTypes.map((f: string) => ({ value: f, label: f }))}
+            transmissionOptions={filterMeta.transmissions.map((t: string) => ({ value: t, label: t }))}
           />
         </div>
       )}
@@ -677,7 +653,11 @@ const handleTestDriveSubmit = async () => {
       <div className="container mx-auto px-4 py-8">
         <CarList 
           cars={filteredCars} 
-          onCarClick={(car) => setSelectedCarId(car._id || car.id)}
+          onCarClick={(car) => {
+            console.log('Car clicked:', car);
+            setSelectedCarId((car._id || car.id)?.toString());
+            setSelectedCarDetails(car); // Ensure dialog gets car data
+          }}
         />
       </div>
 
@@ -685,7 +665,12 @@ const handleTestDriveSubmit = async () => {
       <CarDetailDialog
         car={selectedCarDetails}
         open={!!selectedCarId}
-        onOpenChange={open => setSelectedCarId(open ? selectedCarId : null)}
+        onOpenChange={open => {
+          if (!open) {
+            setSelectedCarId(null);
+            setSelectedCarDetails(null);
+          }
+        }}
         loading={loadingCarDetails}
       />
     </div>

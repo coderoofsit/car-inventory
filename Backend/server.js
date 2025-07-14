@@ -7,7 +7,12 @@ const app = express();
 
 // Middleware
 app.use(cors());
+
+// Routes
+const { router: carRoutes, uploadRoute: carUploadRoute } = require('./routes/carRoutes');
+app.use('/api/cars/upload', carUploadRoute); // Only upload route, before express.json()
 app.use(express.json());
+app.use('/api', carRoutes); // All other car routes
 
 // ✅ Connect to MongoDB only once
 mongoose.connect(process.env.MONGO_URI, {
@@ -16,10 +21,6 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .then(() => console.log('✅ MongoDB Connected'))
 .catch((err) => console.error('❌ MongoDB Error:', err));
-
-// Routes
-const carRoutes = require('./routes/carRoutes');
-app.use('/api', carRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;

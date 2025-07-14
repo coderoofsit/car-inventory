@@ -14,7 +14,7 @@ const CarList: React.FC<CarListProps> = ({ cars, onCarClick }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {cars.map(car => (
-        <CarCard key={car.id} car={car} onClick={onCarClick ? () => onCarClick(car) : undefined} />
+        <CarCard key={car._id || car.id} car={car} onClick={() => onCarClick(car)} />
       ))}
     </div>
   );

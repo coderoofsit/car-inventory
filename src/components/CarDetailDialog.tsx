@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent } from './ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ArrowLeft, Heart, ChevronLeft, ChevronRight, Home } from 'lucide-react';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 interface CarDetailDialogProps {
   car: any; // Use backend object directly
@@ -18,11 +19,16 @@ const toTitleCase = (str: string) => str.replace(/\w\S*/g, (txt) => txt.charAt(0
 
 const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChange, loading }) => {
   const [tab, setTab] = useState('overview');
+  console.log('CarDetailDialog open:', open, 'car:', car);
   const [mediaIndex, setMediaIndex] = useState(0);
   if (loading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="flex items-center justify-center min-h-[300px]">
+          <VisuallyHidden>
+            <DialogTitle>Loading Vehicle Details</DialogTitle>
+            <DialogDescription>Loading vehicle details, please wait.</DialogDescription>
+          </VisuallyHidden>
           <div className="flex flex-col items-center">
             <svg className="animate-spin h-8 w-8 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -61,6 +67,10 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-7xl p-0 overflow-hidden h-[90vh]">
+        <DialogTitle className='sr-only'>Vehicle Details</DialogTitle>
+        <DialogDescription className='sr-only'>
+          View detailed information about this vehicle, including specifications, features, and media.
+        </DialogDescription>
         <div className="flex h-full">
           {/* Left: Media Section */}
           <div className="w-3/5 bg-gray-50 flex flex-col relative">
