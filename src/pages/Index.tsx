@@ -768,7 +768,100 @@ const handleTestDriveSubmit = async () => {
           setEditCar(selectedCarDetails);
           setIsEditCarOpen(true);
         }}
+        onContact={() => setShowContactForm(true)}
+        onTestDrive={() => setShowTestDriveForm(true)}
       />
+
+      {/* Contact Us Dialog */}
+      <Dialog open={showContactForm} onOpenChange={setShowContactForm}>
+        <DialogContent>
+          <DialogTitle>Contact Us</DialogTitle>
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              handleContactSubmit();
+            }}
+            className="space-y-4"
+          >
+            <Input
+              placeholder="Name"
+              value={contactForm.name}
+              onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
+              required
+            />
+            <Input
+              placeholder="Email"
+              value={contactForm.email}
+              onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
+              required
+            />
+            <Input
+              placeholder="Phone"
+              value={contactForm.phone}
+              onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
+              required
+            />
+            <Textarea
+              placeholder="Message"
+              value={contactForm.message}
+              onChange={e => setContactForm({ ...contactForm, message: e.target.value })}
+            />
+            <Button type="submit" className="w-full">Send</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Book a Test Drive Dialog */}
+      <Dialog open={showTestDriveForm} onOpenChange={setShowTestDriveForm}>
+        <DialogContent>
+          <DialogTitle>Book a Test Drive</DialogTitle>
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              handleTestDriveSubmit();
+            }}
+            className="space-y-4"
+          >
+            <Input
+              placeholder="Name"
+              value={testDriveForm.name}
+              onChange={e => setTestDriveForm({ ...testDriveForm, name: e.target.value })}
+              required
+            />
+            <Input
+              placeholder="Email"
+              value={testDriveForm.email}
+              onChange={e => setTestDriveForm({ ...testDriveForm, email: e.target.value })}
+              required
+            />
+            <Input
+              placeholder="Phone"
+              value={testDriveForm.phone}
+              onChange={e => setTestDriveForm({ ...testDriveForm, phone: e.target.value })}
+              required
+            />
+            <Input
+              placeholder="Preferred Date"
+              type="date"
+              value={testDriveForm.preferredDate}
+              onChange={e => setTestDriveForm({ ...testDriveForm, preferredDate: e.target.value })}
+              required
+            />
+            <Input
+              placeholder="Preferred Time"
+              type="time"
+              value={testDriveForm.preferredTime}
+              onChange={e => setTestDriveForm({ ...testDriveForm, preferredTime: e.target.value })}
+            />
+            <Textarea
+              placeholder="Message"
+              value={testDriveForm.message}
+              onChange={e => setTestDriveForm({ ...testDriveForm, message: e.target.value })}
+            />
+            <Button type="submit" className="w-full">Book Test Drive</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
       <VehicleAddDialog
         isOpen={isEditCarOpen}
         onClose={() => setIsEditCarOpen(false)}

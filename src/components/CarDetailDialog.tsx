@@ -11,6 +11,8 @@ interface CarDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   loading?: boolean;
   onEdit?: () => void;
+  onContact?: () => void;
+  onTestDrive?: () => void;
 }
 
 const isVideo = (url: string) => /\.(mp4|mov|avi|webm)$/i.test(url) || url.includes('video');
@@ -18,7 +20,7 @@ const isVideo = (url: string) => /\.(mp4|mov|avi|webm)$/i.test(url) || url.inclu
 // Utility function to capitalize first letter of each word
 const toTitleCase = (str: string) => str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 
-const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChange, loading, onEdit = () => {} }) => {
+const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChange, loading, onEdit = () => {}, onContact, onTestDrive }) => {
   const [tab, setTab] = useState('overview');
   console.log('CarDetailDialog open:', open, 'car:', car);
   const [mediaIndex, setMediaIndex] = useState(0);
@@ -206,6 +208,17 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
                         <span className="text-sm text-gray-900 font-semibold">{field.value}</span>
                       </div>
                     ))}
+                  </div>
+                  {/* Add Contact Us and Book a Test Drive buttons */}
+                  <div className="flex flex-col sm:flex-row gap-4 justify-end mt-8">
+                    <Button
+                      variant="outline"
+                      className="flex-1 transition-colors duration-150 border-blue-600 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100 active:text-blue-900 focus:ring-2 focus:ring-blue-300"
+                      onClick={onContact}
+                    >
+                      Contact Us
+                    </Button>
+                    <Button className="flex-1 bg-blue-600 text-white" onClick={onTestDrive}>Book a Test Drive</Button>
                   </div>
                 </TabsContent>
                 <TabsContent value="description" className="p-6">
