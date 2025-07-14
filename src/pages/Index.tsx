@@ -451,6 +451,22 @@ const handleContactSubmit = async () => {
     return;
   }
 
+  // Send to backend
+  try {
+    await fetch('http://localhost:5000/api/contacts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(contactForm),
+    });
+  } catch (err) {
+    toast({
+      title: "Backend Error",
+      description: "Could not save contact to backend.",
+      variant: "destructive"
+    });
+    // Continue to CRM even if backend fails
+  }
+
   try {
     const contactPayload = {
       locationId: "dvLotMiifOU7u2891LNr",

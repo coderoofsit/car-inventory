@@ -13,6 +13,8 @@ const { router: carRoutes, uploadRoute: carUploadRoute } = require('./routes/car
 app.use('/api/cars/upload', carUploadRoute); // Only upload route, before express.json()
 app.use(express.json());
 app.use('/api', carRoutes); // All other car routes
+const contactRoutes = require('./routes/contactRoutes');
+app.use('/api/contacts', contactRoutes);
 
 // ✅ Connect to MongoDB only once
 mongoose.connect(process.env.MONGO_URI, {
