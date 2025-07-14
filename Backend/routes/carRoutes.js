@@ -213,6 +213,22 @@ router.post('/cars', async (req, res) => {
   }
 });
 
+// PUT update car by ID
+router.put('/cars/:id', async (req, res) => {
+  try {
+    const carId = req.params.id;
+    const update = req.body;
+    const updatedCar = await Car.findByIdAndUpdate(carId, update, { new: true });
+    if (!updatedCar) {
+      return res.status(404).json({ error: 'Car not found' });
+    }
+    res.json(updatedCar);
+  } catch (err) {
+    console.error('[carRoutes] Error updating car:', err);
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // GET a single car by ID
 router.get('/:id', async (req, res) => {
   try {

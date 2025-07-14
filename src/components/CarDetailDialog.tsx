@@ -10,6 +10,7 @@ interface CarDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   loading?: boolean;
+  onEdit?: () => void;
 }
 
 const isVideo = (url: string) => /\.(mp4|mov|avi|webm)$/i.test(url) || url.includes('video');
@@ -17,7 +18,7 @@ const isVideo = (url: string) => /\.(mp4|mov|avi|webm)$/i.test(url) || url.inclu
 // Utility function to capitalize first letter of each word
 const toTitleCase = (str: string) => str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 
-const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChange, loading }) => {
+const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChange, loading, onEdit = () => {} }) => {
   const [tab, setTab] = useState('overview');
   console.log('CarDetailDialog open:', open, 'car:', car);
   const [mediaIndex, setMediaIndex] = useState(0);
@@ -130,9 +131,14 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
                 <Button variant="ghost" className="p-0 h-auto" onClick={() => onOpenChange(false)}>
                   <ArrowLeft className="mr-2 h-5 w-5 text-black" /> Back
                 </Button>
-                <Button variant="ghost" className="p-2">
-                  <Heart className="h-6 w-6 text-black" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" className="p-2" onClick={onEdit}>
+                    Edit
+                  </Button>
+                  <Button variant="ghost" className="p-2">
+                    <Heart className="h-6 w-6 text-black" />
+                  </Button>
+                </div>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-1">
                 {car.manufactureYear} {toTitleCase(car.brand || '')} {toTitleCase(car.model || '')}

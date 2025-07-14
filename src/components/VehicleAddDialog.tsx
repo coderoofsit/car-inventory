@@ -15,9 +15,11 @@ interface VehicleAddDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (vehicleData: any) => void;
+  editCar?: any;
+  mode?: 'add' | 'edit';
 }
 
-const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, onSave }) => {
+const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, onSave, editCar, mode = 'add' }) => {
   // Month and Year arrays for dropdowns
   const months = [
     { value: '01', label: 'January' },
@@ -283,11 +285,28 @@ const handleDialogClose = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // When dialog opens in edit mode, pre-fill form with editCar data
+  React.useEffect(() => {
+    if (isOpen && mode === 'edit' && editCar) {
+      setVehicleData({
+        ...vehicleData,
+        ...editCar,
+        // Ensure additional features are in the correct format (array of objects with id/value)
+        additional: Array.isArray(editCar.additional)
+          ? editCar.additional.map((f: any) => typeof f === 'object' && f.id ? f : { id: `${Date.now()}-${Math.random()}`, value: typeof f === 'string' ? f : f.value })
+          : [],
+      });
+      setUploadedMedia(editCar.images || []);
+    } else if (!isOpen) {
+      resetForm();
+    }
+  }, [isOpen, mode, editCar]);
+
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogContent className="relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[700px] max-w-none p-0 overflow-hidden">
         <DialogTitle asChild>
-          <span className="sr-only">Add Vehicle</span>
+          <span className="sr-only">{mode === 'edit' ? 'Edit Vehicle' : 'Add Vehicle'}</span>
         </DialogTitle>
         <DialogDescription asChild>
           <span className="sr-only">Fill out the form to add a new vehicle to the inventory.</span>
@@ -824,7 +843,7 @@ const handleDialogClose = () => {
                                     type="button"
                                     variant="outline"
                                     className="w-fit border border-gray-400 text-gray-700 bg-blue-50 px-4 py-2 rounded-lg"
-                                    onClick={() => setNewAdditionalFeature('')}
+                                    onClick={() => setNewAdditionalFeature(' ')}
                                     disabled={!!newAdditionalFeature}
                                   >
                                     Add feature
@@ -838,26 +857,28 @@ const handleDialogClose = () => {
                                       value={newAdditionalFeature}
                                       onChange={e => setNewAdditionalFeature(e.target.value)}
                                       onBlur={() => {
-                                        if (newAdditionalFeature.trim()) {
+                                        const trimmed = newAdditionalFeature.trim();
+                                        if (trimmed && !vehicleData.additional.some((f: any) => f.value === trimmed)) {
+                                          const newFeature = { id: `${Date.now()}-${Math.random()}`, value: trimmed };
                                           setVehicleData(prev => ({
                                             ...prev,
-                                            additional: [...prev.additional, newAdditionalFeature.trim()]
+                                            additional: [...prev.additional, newFeature]
                                           }));
-                                          setNewAdditionalFeature('');
-                                        } else {
-                                          setNewAdditionalFeature('');
                                         }
+                                        setNewAdditionalFeature('');
                                       }}
                                       onKeyDown={e => {
                                         if (e.key === 'Enter') {
                                           e.preventDefault();
-                                          if (newAdditionalFeature.trim()) {
+                                          const trimmed = newAdditionalFeature.trim();
+                                          if (trimmed && !vehicleData.additional.some((f: any) => f.value === trimmed)) {
+                                            const newFeature = { id: `${Date.now()}-${Math.random()}`, value: trimmed };
                                             setVehicleData(prev => ({
                                               ...prev,
-                                              additional: [...prev.additional, newAdditionalFeature.trim()]
+                                              additional: [...prev.additional, newFeature]
                                             }));
-                                            setNewAdditionalFeature('');
                                           }
+                                          setNewAdditionalFeature('');
                                         } else if (e.key === 'Escape') {
                                           setNewAdditionalFeature('');
                                         }
@@ -878,21 +899,21 @@ const handleDialogClose = () => {
                                 {/* List custom features */}
                                 {vehicleData.additional.length > 0 && (
                                   <div className="mt-2 flex flex-col gap-2">
-                                    {vehicleData.additional.map((feature: string) => (
-                                      <div key={feature} className="flex items-center gap-2">
+                                    {vehicleData.additional.map((feature: any) => (
+                                      <div key={feature.id || `${feature.value}-${Math.random()}`} className="flex items-center gap-2">
                                         <input
                                           type="checkbox"
-                                          checked={vehicleData.additional.includes(feature)}
-                                          onChange={() => toggleFeature('additional', feature)}
+                                          checked={vehicleData.additional.some((f: any) => f.id === feature.id)}
+                                          onChange={() => toggleFeature('additional', feature.value)}
                                           className="rounded border-gray-300 bg-blue-50"
                                         />
-                                        <span>{feature}</span>
+                                        <span>{feature.value}</span>
                                         <button
                                           type="button"
                                           className="ml-2 text-red-500 hover:text-red-700 text-xs"
                                           onClick={() => setVehicleData(prev => ({
                                             ...prev,
-                                            additional: prev.additional.filter((f: string) => f !== feature)
+                                            additional: prev.additional.filter((f: any) => f.id !== feature.id)
                                           }))}
                                         >
                                           Remove

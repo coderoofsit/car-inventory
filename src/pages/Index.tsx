@@ -162,6 +162,9 @@ frameborder="0">
     fuel: '', transmission: '', condition: '', description: '', image: '', vin: ''
   });
   const [showFilters, setShowFilters] = useState(false);
+  // Add state for edit mode and car to edit
+  const [isEditCarOpen, setIsEditCarOpen] = useState(false);
+  const [editCar, setEditCar] = useState(null);
   // Fetch filter metadata and all cars on mount
   React.useEffect(() => {
     const loadMetaAndCars = async () => {
@@ -723,6 +726,38 @@ const handleTestDriveSubmit = async () => {
           }
         }}
         loading={loadingCarDetails}
+        onEdit={() => {
+          setEditCar(selectedCarDetails);
+          setIsEditCarOpen(true);
+        }}
+      />
+      <VehicleAddDialog
+        isOpen={isEditCarOpen}
+        onClose={() => setIsEditCarOpen(false)}
+        onSave={async (vehicleData) => {
+          // If editCar is set, update the car
+          if (editCar && editCar._id) {
+            try {
+              const response = await fetch(`http://localhost:5000/api/cars/${editCar._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(vehicleData),
+              });
+              if (!response.ok) throw new Error('Failed to update car');
+              const updatedCar = await response.json();
+              setCars(prev => prev.map(car => (car._id === updatedCar._id ? updatedCar : car)));
+              setFilteredCars(prev => prev.map(car => (car._id === updatedCar._id ? updatedCar : car)));
+              setIsEditCarOpen(false);
+              setEditCar(null);
+              setSelectedCarDetails(updatedCar);
+              toast({ title: 'Car updated', description: 'Vehicle details updated successfully.' });
+            } catch (err) {
+              toast({ title: 'Error', description: 'Failed to update car.', variant: 'destructive' });
+            }
+          }
+        }}
+        editCar={editCar}
+        mode={editCar ? 'edit' : 'add'}
       />
     </div>
   );
