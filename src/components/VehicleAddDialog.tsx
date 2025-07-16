@@ -10,6 +10,7 @@ import { Upload, X, Search } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Progress } from "@/components/ui/progress";
 import { uploadMediaToBackend } from "@/lib/mediaAPI";
+import { vehicleInspectionSchema } from './vehicleInspectionSchema';
 
 interface VehicleAddDialogProps {
   isOpen: boolean;
@@ -100,6 +101,7 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
     documentsAvailable: [],
     additional: []
   });
+  const [inspectionReport, setInspectionReport] = useState({});
 // 1. Add a function to reset all form state
 const resetForm = () => {
   setVehicleData({
@@ -314,8 +316,8 @@ const handleDialogClose = () => {
         <div className="flex flex-col h-full">
           <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 relative">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="grid  grid-cols-4 mx-6 mt-4 mb-0 max-w-3xl justify-self-center">
-                {[{ value: "info", label: "Vehicle Information" }, { value: "details", label: "Vehicle Details" }, { value: "photos", label: "Vehicle Photos" }, { value: "features", label: "Vehicle Features" }].map(tab => (
+              <TabsList className="grid grid-cols-5 mx-6 mt-4 mb-0 max-w-3xl justify-self-center">
+                {[{ value: "info", label: "Vehicle Information" }, { value: "details", label: "Vehicle Details" }, { value: "photos", label: "Vehicle Photos" }, { value: "features", label: "Vehicle Features" }, { value: "inspection", label: "Inspection Report" }].map(tab => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
@@ -930,6 +932,62 @@ const handleDialogClose = () => {
                     </Accordion>
                   </div>
                 </TabsContent>
+
+                {/* Inspection Report Tab Content */}
+                <TabsContent value="inspection" className="p-6">
+                  {Object.entries(vehicleInspectionSchema).map(([section, fields]) => (
+                    <Accordion type="single" collapsible key={section} className="mb-4">
+                      <AccordionItem value={section}>
+                        <AccordionTrigger className="text-lg font-semibold capitalize">{section.replace(/_/g, ' ')}</AccordionTrigger>
+                        <AccordionContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {Object.entries(fields).map(([field, options]) => (
+                              <div key={field} className="flex flex-col gap-1">
+                                <label className="text-sm font-medium capitalize mb-1">{field.replace(/_/g, ' ')}</label>
+                                {Array.isArray(options) ? (
+                                  <Select
+                                    value={inspectionReport[section]?.[field] || ''}
+                                    onValueChange={val => setInspectionReport(r => ({
+                                      ...r,
+                                      [section]: { ...r[section], [field]: val }
+                                    }))}
+                                  >
+                                    <SelectTrigger className="w-full" />
+                                    <SelectContent>
+                                      {options.map(opt => (
+                                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                ) : options === 'number' ? (
+                                  <input
+                                    type="number"
+                                    className="input input-bordered w-full"
+                                    value={inspectionReport[section]?.[field] || ''}
+                                    onChange={e => setInspectionReport(r => ({
+                                      ...r,
+                                      [section]: { ...r[section], [field]: e.target.value }
+                                    }))}
+                                  />
+                                ) : (
+                                  <input
+                                    type="text"
+                                    className="input input-bordered w-full"
+                                    value={inspectionReport[section]?.[field] || ''}
+                                    onChange={e => setInspectionReport(r => ({
+                                      ...r,
+                                      [section]: { ...r[section], [field]: e.target.value }
+                                    }))}
+                                  />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  ))}
+                </TabsContent>
               </div>
             </Tabs>
           </div>
@@ -940,7 +998,7 @@ const handleDialogClose = () => {
               <Button
                 variant="outline"
                 onClick={() => {
-                  const tabs = ["info", "details", "photos", "features"];
+                  const tabs = ["info", "details", "photos", "features", "inspection"];
                   const currentIndex = tabs.indexOf(activeTab);
                   if (currentIndex > 0) {
                     setActiveTab(tabs[currentIndex - 1]);
@@ -952,10 +1010,10 @@ const handleDialogClose = () => {
                 Previous
               </Button>
 
-              {activeTab !== "features" && (
+              {activeTab !== "inspection" && (
                 <Button
                   onClick={() => {
-                    const tabs = ["info", "details", "photos", "features"];
+                    const tabs = ["info", "details", "photos", "features", "inspection"];
                     const currentIndex = tabs.indexOf(activeTab);
                     if (currentIndex < tabs.length - 1) {
                       setActiveTab(tabs[currentIndex + 1]);
@@ -969,14 +1027,14 @@ const handleDialogClose = () => {
 
               <Button
                 onClick={handleSave}
-                disabled={activeTab !== "features"}
+                disabled={activeTab !== "inspection"}
                 className="w-40 bg-green-700 hover:bg-green-800 text-white rounded-full px-8 py-2 font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Save Vehicle Info
               </Button>
             </div>
             <div className="flex justify-center mt-3">
-              {["info", "details", "photos", "features"].map((tab, index) => (
+              {["info", "details", "photos", "features", "inspection"].map((tab, index) => (
                 <div
                   key={tab}
                   className={`w-2 h-2 rounded-full mx-1 ${

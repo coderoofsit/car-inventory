@@ -70,7 +70,7 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl p-0 overflow-hidden h-[70vh]">
+      <DialogContent className="max-w-7xl p-0 overflow-hidden h-[60vh]">
         <DialogTitle className='sr-only'>Vehicle Details</DialogTitle>
         <DialogDescription className='sr-only'>
           View detailed information about this vehicle, including specifications, features, and media.

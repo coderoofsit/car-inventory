@@ -15,6 +15,9 @@ app.use(express.json());
 app.use('/api', carRoutes); // All other car routes
 const contactRoutes = require('./routes/contactRoutes');
 app.use('/api/contacts', contactRoutes);
+const requirementRoutes = require('./routes/requirementRoutes');
+require('./models/requirement');
+app.use('/api/requirements', requirementRoutes);
 
 // ✅ Connect to MongoDB only once
 mongoose.connect(process.env.MONGO_URI, {

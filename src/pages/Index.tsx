@@ -124,7 +124,11 @@ frameborder="0">
     name: '',
     email: '',
     phone: '',
-    message: ''
+    message: '',
+    make: '',
+    model: '',
+    year: '',
+    price: ''
   });
   const [testDriveForm, setTestDriveForm] = useState({
     name: '',
@@ -474,7 +478,11 @@ const handleContactSubmit = async () => {
       email: contactForm.email,
       phone: contactForm.phone,
       customField: {
-        message: contactForm.message
+        message: contactForm.message,
+        make: contactForm.make,
+        model: contactForm.model,
+        year: contactForm.year,
+        price: contactForm.price
       },
       tags: ["Website Contact"]
     };
@@ -494,7 +502,7 @@ const handleContactSubmit = async () => {
     });
   }
 
-  setContactForm({ name: '', email: '', phone: '', message: '' });
+  setContactForm({ name: '', email: '', phone: '', message: '', make: '', model: '', year: '', price: '' });
   setShowContactForm(false);
 };
 const handleTestDriveSubmit = async () => {
@@ -572,6 +580,10 @@ const handleTestDriveSubmit = async () => {
       maximumFractionDigits: 0,
     }).format(price);
   };
+
+  const [showRequirementDialog, setShowRequirementDialog] = useState(false);
+  const [requirementContact, setRequirementContact] = useState({ name: '', email: '', phone: '' });
+  const [requirementSubmitted, setRequirementSubmitted] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -766,6 +778,14 @@ const handleTestDriveSubmit = async () => {
             setSelectedCarId((car._id || car.id)?.toString());
             setSelectedCarDetails(car); // Ensure dialog gets car data
           }}
+          emptyState={
+            <>
+              <div>No cars found for your filters.</div>
+              <Button className="mt-4" onClick={() => setShowRequirementDialog(true)}>
+                Request a Car
+              </Button>
+            </>
+          }
         />
       </div>
 
@@ -784,11 +804,21 @@ const handleTestDriveSubmit = async () => {
           setEditCar(selectedCarDetails);
           setIsEditCarOpen(true);
         }}
-        onContact={() => setShowContactForm(true)}
+        onContact={() => {
+          setContactForm(form => ({
+            ...form,
+            make: selectedCarDetails?.brand || selectedCarDetails?.make || '',
+            model: selectedCarDetails?.model || '',
+            year: selectedCarDetails?.manufactureYear?.toString() || selectedCarDetails?.year?.toString() || '',
+            price: selectedCarDetails?.sellingPrice?.toString() || selectedCarDetails?.price?.toString() || ''
+          }));
+          setShowContactForm(true);
+        }}
         onTestDrive={() => setShowTestDriveForm(true)}
       />
 
       {/* Contact Us Dialog */}
+      {/*    */}
       <Dialog open={showContactForm} onOpenChange={setShowContactForm}>
         <DialogContent>
           <DialogTitle>Contact Us</DialogTitle>
@@ -817,6 +847,26 @@ const handleTestDriveSubmit = async () => {
               onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
               required
             />
+            <Input
+              placeholder="Make"
+              value={contactForm.make}
+              onChange={e => setContactForm({ ...contactForm, make: e.target.value })}
+            />
+            <Input
+              placeholder="Model"
+              value={contactForm.model}
+              onChange={e => setContactForm({ ...contactForm, model: e.target.value })}
+            />
+            <Input
+              placeholder="Year"
+              value={contactForm.year}
+              onChange={e => setContactForm({ ...contactForm, year: e.target.value })}
+            />
+            <Input
+              placeholder="Price"
+              value={contactForm.price}
+              onChange={e => setContactForm({ ...contactForm, price: e.target.value })}
+            />
             <Textarea
               placeholder="Message"
               value={contactForm.message}
@@ -828,6 +878,7 @@ const handleTestDriveSubmit = async () => {
       </Dialog>
 
       {/* Book a Test Drive Dialog */}
+      {/* TODO :- Add A field which is already Filled With currunt Detiails and can be editade   */}
       <Dialog open={showTestDriveForm} onOpenChange={setShowTestDriveForm}>
         <DialogContent>
           <DialogTitle>Book a Test Drive</DialogTitle>
@@ -906,6 +957,63 @@ const handleTestDriveSubmit = async () => {
         editCar={editCar}
         mode={editCar ? 'edit' : 'add'}
       />
+
+      {/* Requirement Dialog */}
+      <Dialog open={showRequirementDialog} onOpenChange={setShowRequirementDialog}>
+        <DialogContent>
+          <DialogTitle>Request a Car</DialogTitle>
+          {requirementSubmitted ? (
+            <div className="text-center py-8">Thank you! We have registered your requirement and will reach out when we find a match.</div>
+          ) : (
+            <form
+              className="space-y-4"
+              onSubmit={async e => {
+                e.preventDefault();
+                // Send filter + contact data to backend
+                const payload = {
+                  filters: pendingFilters,
+                  contact: requirementContact
+                };
+                try {
+                  await fetch('http://localhost:5000/api/requirements', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                  });
+                  setRequirementSubmitted(true);
+                  setTimeout(() => {
+                    setShowRequirementDialog(false);
+                    setRequirementSubmitted(false);
+                    setRequirementContact({ name: '', email: '', phone: '' });
+                  }, 3000);
+                } catch (err) {
+                  toast({ title: 'Error', description: 'Failed to register requirement', variant: 'destructive' });
+                }
+              }}
+            >
+              <Input
+                placeholder="Name"
+                value={requirementContact.name}
+                onChange={e => setRequirementContact({ ...requirementContact, name: e.target.value })}
+                required
+              />
+              <Input
+                placeholder="Email"
+                value={requirementContact.email}
+                onChange={e => setRequirementContact({ ...requirementContact, email: e.target.value })}
+                required
+              />
+              <Input
+                placeholder="Phone"
+                value={requirementContact.phone}
+                onChange={e => setRequirementContact({ ...requirementContact, phone: e.target.value })}
+                required
+              />
+              <Button type="submit" className="w-full">Submit Requirement</Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
