@@ -222,6 +222,7 @@ const handleDialogClose = () => {
     
     return cleaned;
   };
+  // When preparing the payload for saving the vehicle, ensure 'additional' is an array of strings
   const handleSave = () => {
     // Validate required fields
     const requiredFields = [
@@ -249,8 +250,26 @@ const handleDialogClose = () => {
       return;
     }
 
+    // Registration date must be before insurance validity date
+    if (vehicleData.registrationYear && vehicleData.registrationMonth && vehicleData.insuranceValidityYear && vehicleData.insuranceValidityMonth) {
+      const regDate = new Date(Number(vehicleData.registrationYear), Number(vehicleData.registrationMonth) - 1, 1);
+      const insDate = new Date(Number(vehicleData.insuranceValidityYear), Number(vehicleData.insuranceValidityMonth) - 1, 1);
+      if (regDate >= insDate) {
+        alert('Registration date must be before Insurance Validity date.');
+        return;
+      }
+    }
+
     const cleanedData = cleanVehicleData(vehicleData);
-    onSave({ ...cleanedData, media: uploadedMedia });
+    const payload = {
+      ...cleanedData,
+      additional: Array.isArray(vehicleData.additional)
+        ? vehicleData.additional.map(item => typeof item === 'string' ? item : item.value)
+        : [],
+      inspectionReport,
+      media: uploadedMedia,
+    };
+    onSave(payload);
     resetForm(); // <-- Reset form state
     onClose();
   };
@@ -299,10 +318,28 @@ const handleDialogClose = () => {
           : [],
       });
       setUploadedMedia(editCar.media || []);
+      setInspectionReport(editCar.inspectionReport || {}); // <-- Pre-fill inspection report
     } else if (!isOpen) {
       resetForm();
     }
   }, [isOpen, mode, editCar]);
+
+  React.useEffect(() => {
+    if (!isOpen) {
+      setActiveTab('info');
+      setUploadedMedia([]);
+      setUploadProgress(null);
+      setUploading(false);
+      setUploadSuccess(false);
+      setUploadError(null);
+      setVehicleData({
+        vin: '', year: '', make: '', model: '', trim: '', bodyStyle: undefined, doors: '', manufactureMonth: undefined, manufactureYear: undefined, brand: '', noOfOwner: undefined, homeTestDrive: undefined, registrationMonth: undefined, registrationYear: undefined, insuranceValidityMonth: undefined, insuranceValidityYear: undefined, insuranceValid: undefined, insuranceType: '', rto: '', engineCapacity: '', bodyStyleDetails: undefined, ownerDetails: undefined, homeTestDriveDetails: undefined, kmRun: '', fuelTypeDetails: undefined, transmissionTypeDetails: undefined, exteriorColorDetails: '', interiorColorDetails: '', condition: undefined, sellingPrice: '', status: undefined, mileage: '', mileageUnit: '', fuelType: '', driveType: '', transmissionType: '', engineType: '', exteriorColor: '', interiorColor: '', description: '', interior: [], convenience: [], safety: [], exterior: [], performance: [], documentsAvailable: [], additional: []
+      });
+      setInspectionReport({});
+      setNewAdditionalFeature('');
+      setFeatureSearch({});
+    }
+  }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogClose}>
@@ -952,7 +989,9 @@ const handleDialogClose = () => {
                                       [section]: { ...r[section], [field]: val }
                                     }))}
                                   >
-                                    <SelectTrigger className="w-full" />
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Select..." />
+                                    </SelectTrigger>
                                     <SelectContent>
                                       {options.map(opt => (
                                         <SelectItem key={opt} value={opt}>{opt}</SelectItem>

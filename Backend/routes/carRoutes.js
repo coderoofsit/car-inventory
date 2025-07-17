@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const uploadRoute = express.Router();
 const Car = require('../models/car');
+const InspectionReport = require('../models/inspectionReport');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
@@ -199,11 +200,19 @@ router.get('/filters', async (req, res) => {
 router.post('/cars', async (req, res) => {
   console.log('[carRoutes] POST / - Add new car');
   try {
-    // Accept 'media' as the array of images/videos
-    // No conversion needed, use req.body.media directly
-    const car = new Car(req.body);
+    const { inspectionReport, ...carData } = req.body;
+    const car = new Car(carData);
     const savedCar = await car.save();
-    res.status(201).json(savedCar);
+    if (inspectionReport) {
+      await InspectionReport.create({
+        ...inspectionReport,
+        car: savedCar._id
+      });
+    }
+    // Fetch the car again, with inspection report fully populated (all fields)
+    const inspection = await InspectionReport.findOne({ car: savedCar._id }).lean();
+    const carWithInspection = { ...savedCar.toObject(), inspectionReport: inspection };
+    res.status(201).json(carWithInspection);
   } catch (err) {
     console.error('[carRoutes] Error saving car:', err);
     res.status(400).json({ error: err.message });
@@ -213,27 +222,36 @@ router.post('/cars', async (req, res) => {
 // PUT update car by ID
 router.put('/cars/:id', async (req, res) => {
   try {
+    const { inspectionReport, ...carData } = req.body;
     const carId = req.params.id;
-    const update = req.body;
-    const updatedCar = await Car.findByIdAndUpdate(carId, update, { new: true });
-    if (!updatedCar) {
-      return res.status(404).json({ error: 'Car not found' });
+    const updatedCar = await Car.findByIdAndUpdate(carId, carData, { new: true });
+    let updatedInspection = null;
+    if (inspectionReport) {
+      updatedInspection = await InspectionReport.findOneAndUpdate(
+        { car: carId },
+        { ...inspectionReport, car: carId },
+        { new: true, upsert: true }
+      );
     }
-    res.json(updatedCar);
+    const carWithInspection = updatedInspection
+      ? { ...updatedCar.toObject(), inspectionReport: updatedInspection }
+      : updatedCar;
+    res.json(carWithInspection);
   } catch (err) {
     console.error('[carRoutes] Error updating car:', err);
     res.status(400).json({ error: err.message });
   }
 });
 
-// GET a single car by ID
+// GET a single car by ID (with inspection report)
 router.get('/:id', async (req, res) => {
   try {
-    const car = await Car.findById(req.params.id);
+    const car = await Car.findById(req.params.id).lean();
     if (!car) {
       return res.status(404).json({ error: 'Car not found' });
     }
-    res.json(car);
+    const inspectionReport = await InspectionReport.findOne({ car: car._id }).lean();
+    res.json({ ...car, inspectionReport });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

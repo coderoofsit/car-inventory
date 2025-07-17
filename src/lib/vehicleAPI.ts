@@ -102,4 +102,34 @@ export async function fetchFilterMetadataFromBackend(): Promise<any> {
     console.error('Error fetching filter metadata from backend:', error);
     throw error;
   }
+}
+
+// Inspection Report API
+export async function fetchInspectionReportByCarId(carId: string) {
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const res = await fetch(`${backendUrl}/api/inspection-reports/car/${carId}`);
+  if (!res.ok) throw new Error('Failed to fetch inspection report');
+  return await res.json();
+}
+
+export async function createInspectionReport(data: any) {
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const res = await fetch(`${backendUrl}/api/inspection-reports`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to create inspection report');
+  return await res.json();
+}
+
+export async function updateInspectionReport(id: string, data: any) {
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const res = await fetch(`${backendUrl}/api/inspection-reports/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update inspection report');
+  return await res.json();
 } 

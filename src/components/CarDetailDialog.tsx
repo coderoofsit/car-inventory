@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { ArrowLeft, Heart, ChevronLeft, ChevronRight, Home, Edit } from 'lucide-react';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { vehicleInspectionSchema } from './vehicleInspectionSchema';
+import { fetchInspectionReportByCarId } from '../lib/vehicleAPI';
 
 interface CarDetailDialogProps {
   car: any; // Use backend object directly
@@ -25,6 +29,29 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
   console.log('CarDetailDialog open:', open, 'car:', car);
   const [mediaIndex, setMediaIndex] = useState(0);
   const isEmbedded = typeof window !== 'undefined' && window.self !== window.top;
+  const [inspectionReport, setInspectionReport] = useState<any>(null);
+  const [inspectionLoading, setInspectionLoading] = useState(false);
+
+  // Always fetch inspection report from /api/inspection-reports/car/:carId
+  React.useEffect(() => {
+    if (open && car && car._id) {
+      setInspectionLoading(true);
+      fetchInspectionReportByCarId(car._id)
+        .then(setInspectionReport)
+        .catch(() => setInspectionReport(null))
+        .finally(() => setInspectionLoading(false));
+    }
+  }, [open, car]);
+
+  React.useEffect(() => {
+    if (!open) {
+      setTab('overview');
+      setMediaIndex(0);
+      setInspectionReport(null);
+      setInspectionLoading(false);
+    }
+  }, [open]);
+
   if (loading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,14 +97,14 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
 
   return (
 <Dialog open={open} onOpenChange={onOpenChange}>
-  <DialogContent className="max-w-4xl w-full p-0 overflow-hidden max-h-[90vh] flex flex-col">
+  <DialogContent className="max-w-4xl w-full p-0 overflow-hidden h-[62vh] flex flex-col">
     <DialogTitle className='sr-only'>Vehicle Details</DialogTitle>
     <DialogDescription className='sr-only'>
       View detailed information about this vehicle, including specifications, features, and media.
     </DialogDescription>
     <div className="flex flex-col md:flex-row w-full h-full flex-1 min-h-0">
       {/* Left: Media Section */}
-      <div className="w-full md:w-1/2 bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div className="w-full md:w-1/2 bg-gray-50 flex flex-col items-center justify-center p-4 h-full">
         {/* Main media preview */}
         <div className="w-full flex items-center justify-center mb-2">
           {media.length > 0 && (
@@ -119,7 +146,7 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
       </div>
       
       {/* Right: Details Section */}
-      <div className="w-full md:w-1/2 flex flex-col min-h-0">
+      <div className="w-full md:w-1/2 flex flex-col min-h-0 h-full p-2">
         {/* Header */}
         <div className="p-6 border-b flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
@@ -170,92 +197,151 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
         </div>
 
         {/* Tabs - This takes remaining space and is constrained */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden h-0">
           <Tabs value={tab} onValueChange={setTab} className="w-full h-full flex flex-col">
             <TabsList className="w-full justify-start rounded-none border-b bg-transparent h-auto p-0 flex-shrink-0">
               <TabsTrigger 
                 value="overview" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent px-6 py-4 font-medium"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent px-2 py-2 font-medium"
               >
                 Overview
               </TabsTrigger>
               <TabsTrigger 
                 value="description" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent px-6 py-4 font-medium"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent px-2 py-2 font-medium"
               >
                 Description
               </TabsTrigger>
               <TabsTrigger 
                 value="features" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent px-6 py-4 font-medium"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent px-2 py-2 font-medium"
               >
                 Features
               </TabsTrigger>
+              <TabsTrigger 
+                value="inspection" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:bg-transparent px-2 py-2 font-medium"
+              >
+                Inspection Report
+              </TabsTrigger>
             </TabsList>
             
-            <TabsContent 
-              value="overview" 
-              className="p-6 flex-1 flex flex-col data-[state=inactive]:hidden min-h-0"
-            >
-              <div className="grid grid-cols-3 gap-6 mb-6 flex-1 overflow-y-auto">
-                {overviewFields.map((field) => (
-                  <div key={field.label} className="flex flex-col">
-                    <span className="text-xs text-gray-400 font-medium uppercase mb-1">{field.label}</span>
-                    <span className="text-sm text-gray-900 font-semibold">{field.value}</span>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Buttons at bottom */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-end mt-auto flex-shrink-0">
-                <Button
-                  variant="outline"
-                  className="flex-1 transition-colors duration-150 border-blue-600 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100 active:text-blue-900 focus:ring-2 focus:ring-blue-300"
-                  onClick={onContact}
-                >
-                  Contact Us
-                </Button>
-                <Button
-                  className="flex-1 bg-blue-600 text-white transition-colors duration-150 hover:bg-blue-700 hover:text-white active:bg-blue-800 active:text-white focus:ring-2 focus:ring-blue-300"
-                  onClick={onTestDrive}
-                >
-                  Book a Test Drive
-                </Button>
-              </div>
-            </TabsContent>
-            
-            <TabsContent 
-              value="description" 
-              className="p-6 flex-1 overflow-y-auto data-[state=inactive]:hidden min-h-0"
-            >
-              <div>
-                <h4 className="font-semibold mb-2">Vehicle Description</h4>
-                <p className="text-gray-700 text-base">{car.description || 'No description provided.'}</p>
-              </div>
-            </TabsContent>
-            
-            <TabsContent 
-              value="features" 
-              className="p-6 flex-1 overflow-y-auto data-[state=inactive]:hidden min-h-0"
-            >
-              <div>
-                {['interior', 'convenience', 'safety', 'exterior', 'performance', 'documentsAvailable', 'additional'].map((category) => (
-                  Array.isArray(car[category]) && car[category].length > 0 ? (
-                    <div key={category} className="mb-4">
-                      <div className="font-semibold mb-2 capitalize">{category.replace(/([A-Z])/g, ' $1')}</div>
-                      <ul className="list-disc list-inside text-gray-700 text-sm">
-                        {car[category].map((feature: string, idx: number) => (
-                          <li key={feature + idx}>{feature}</li>
-                        ))}
-                      </ul>
+            {/* Tab content area always fills and scrolls */}
+            <div className="flex-1 min-h-0 h-full">
+              <TabsContent 
+                value="overview" 
+                className="p-2 flex-1 flex flex-col data-[state=inactive]:hidden min-h-0 h-full overflow-y-auto"
+              >
+                <div className="grid grid-cols-3 gap-6 mb-6 flex-1 overflow-y-auto">
+                  {overviewFields.map((field) => (
+                    <div key={field.label} className="flex flex-col">
+                      <span className="text-xs text-gray-400 font-medium uppercase mb-1">{field.label}</span>
+                      <span className="text-sm text-gray-900 font-semibold">{field.value}</span>
                     </div>
-                  ) : null
-                ))}
-                {['interior', 'convenience', 'safety', 'exterior', 'performance', 'documentsAvailable', 'additional'].every((cat) => !Array.isArray(car[cat]) || car[cat].length === 0) && (
-                  <p className="text-gray-700 text-base">No features listed.</p>
+                  ))}
+                </div>
+                
+                {/* Buttons at bottom */}
+                <div className="flex flex-col sm:flex-row gap-4 justify-end mt-auto flex-shrink-0">
+                  <Button
+                    variant="outline"
+                    className="flex-1 transition-colors duration-150 border-blue-600 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100 active:text-blue-900 focus:ring-2 focus:ring-blue-300"
+                    onClick={onContact}
+                  >
+                    Contact Us
+                  </Button>
+                  <Button
+                    className="flex-1 bg-blue-600 text-white transition-colors duration-150 hover:bg-blue-700 hover:text-white active:bg-blue-800 active:text-white focus:ring-2 focus:ring-blue-300"
+                    onClick={onTestDrive}
+                  >
+                    Book a Test Drive
+                  </Button>
+                </div>
+              </TabsContent>
+              
+              <TabsContent 
+                value="description" 
+                className="p-2 flex-1 overflow-y-auto data-[state=inactive]:hidden min-h-0 h-full"
+              >
+                <div>
+                  <h4 className="font-semibold mb-2">Vehicle Description</h4>
+                  <p className="text-gray-700 text-base">{car.description || 'No description provided.'}</p>
+                </div>
+              </TabsContent>
+              
+              <TabsContent 
+                value="features" 
+                className="p-2 flex-1 overflow-y-auto data-[state=inactive]:hidden min-h-0 h-full"
+              >
+                <div>
+                  {['interior', 'convenience', 'safety', 'exterior', 'performance', 'documentsAvailable', 'additional'].map((category) => (
+                    Array.isArray(car[category]) && car[category].length > 0 ? (
+                      <div key={category} className="mb-4">
+                        <div className="font-semibold mb-2 capitalize">{category.replace(/([A-Z])/g, ' $1')}</div>
+                        <ul className="list-disc list-inside text-gray-700 text-sm">
+                          {car[category].map((feature: string, idx: number) => (
+                            <li key={feature + idx}>{feature}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null
+                  ))}
+                  {['interior', 'convenience', 'safety', 'exterior', 'performance', 'documentsAvailable', 'additional'].every((cat) => !Array.isArray(car[cat]) || car[cat].length === 0) && (
+                    <p className="text-gray-700 text-base">No features listed.</p>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent 
+                value="inspection" 
+                className="p-6 flex-1 overflow-y-auto data-[state=inactive]:hidden min-h-0 h-full"
+              >
+                {inspectionLoading ? (
+                  <div className="text-center text-gray-500 py-8">Loading inspection report...</div>
+                ) : !inspectionReport ? (
+                  <div className="text-center text-gray-500 py-8">No inspection report available for this vehicle.</div>
+                ) : (
+                  <div className="flex flex-col gap-6 items-center w-full">
+                    <Accordion type="multiple" className="w-full max-w-2xl">
+                      {Object.entries(vehicleInspectionSchema).map(([section, fields]) => (
+                        <AccordionItem value={section} key={section}>
+                          <AccordionTrigger className="text-base font-semibold text-gray-800 bg-blue-50 px-4 py-3 rounded-t-lg">
+                            {section.charAt(0).toUpperCase() + section.slice(1).replace(/_/g, ' ')}
+                          </AccordionTrigger>
+                          <AccordionContent className="bg-white px-4 pb-4 rounded-b-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {Object.entries(fields).map(([field]) => {
+                                const value = inspectionReport[section]?.[field];
+                                // Hide if value is empty string, undefined, null, 'NA', 'Not Applicable', or 0 (number)
+                                if (
+                                  value === '' ||
+                                  value === undefined ||
+                                  value === null ||
+                                  value === 'NA' ||
+                                  value === 'Not Applicable' ||
+                                  (typeof value === 'string' && value.trim() === '') ||
+                                  (typeof value === 'number' && value === 0)
+                                ) {
+                                  return null;
+                                }
+                                return (
+                                  <div key={field} className="flex flex-col gap-1">
+                                    <label className="text-sm font-medium capitalize mb-1">{field.replace(/_/g, ' ')}</label>
+                                    <div className="bg-blue-50 rounded px-2 py-1 min-h-[2rem] text-gray-800 border border-gray-200">
+                                      {value}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  </div>
                 )}
-              </div>
-            </TabsContent>
+              </TabsContent>
+            </div>
           </Tabs>
         </div>
       </div>

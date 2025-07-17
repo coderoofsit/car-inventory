@@ -668,55 +668,30 @@ const handleTestDriveSubmit = async () => {
       onClose={() => setIsAddCarOpen(false)}
       onSave={async (vehicleData) => {
         try {
-          // Show loading toast
           toast({
             title: "Saving Vehicle...",
             description: "Please wait while we save the vehicle to the database.",
           });
-
-          // Save to backend
+          // Save to backend (now includes inspectionReport if present)
           const savedVehicle = await saveVehicleToBackend(vehicleData);
-
-          // Map the saved vehicle data to the local Car type
-        const newVehicle: Car = {
-            id: savedVehicle._id || Date.now(),
-            make: savedVehicle.brand || vehicleData.brand || "Unknown",
-            model: savedVehicle.model || vehicleData.model || "Unknown",
-            year: parseInt(savedVehicle.manufactureYear || vehicleData.manufactureYear) || 0,
-            price: parseInt(savedVehicle.sellingPrice || vehicleData.sellingPrice) || 0,
-            mileage: parseInt(savedVehicle.kmRun || vehicleData.kmRun) || 0,
-            location: savedVehicle.location || "Location TBD",
-            fuel: savedVehicle.fuelTypeDetails || vehicleData.fuelTypeDetails || "Gasoline",
-            transmission: savedVehicle.transmissionTypeDetails || vehicleData.transmissionTypeDetails || "Automatic",
-            media: (vehicleData.media && Array.isArray(vehicleData.media) ? vehicleData.media : [vehicleData.media]).filter(Boolean),
-            condition: savedVehicle.condition || vehicleData.condition || "Good",
-            description: savedVehicle.description || vehicleData.description || "No description provided.",
-            vin: savedVehicle.vin || vehicleData.vin || `VIN${Date.now()}`,
-          availability:
-              savedVehicle.status === "sold" || vehicleData.status === "sold"
-              ? "Sold"
-                : savedVehicle.status === "reserved" || vehicleData.status === "reserved"
-              ? "Reserved"
-              : "Available" as "Available" | "Sold" | "Reserved",
-        };
-
-          // Add to local state
-        setCars(prev => [...prev, newVehicle]);
-        setFilteredCars(prev => [...prev, newVehicle]);
-        setIsAddCarOpen(false);
-
-          // Show success toast
-        toast({
-          title: "Vehicle Added Successfully!",
-            description: `${newVehicle.make} ${newVehicle.model} has been saved to the database.`
+          // Use the response directly for dialog
+          setSelectedCarDetails(savedVehicle);
+          setSelectedCarId(savedVehicle._id);
+          setIsAddCarOpen(false);
+          setUploadedMedia([]);
+          setNewCar({
+            make: '', model: '', year: '', price: '', mileage: '', location: '',
+            fuel: '', transmission: '', condition: '', description: '', media: [] as string[], vin: ''
+          });
+          toast({
+            title: "Vehicle Added Successfully!",
+            description: `${savedVehicle.brand || savedVehicle.make} ${savedVehicle.model} added to your database.`
           });
         } catch (error) {
-          console.error('Error saving vehicle:', error);
-          
-          // Show error toast
+          console.error("❌ Error adding car:", error);
           toast({
-            title: "Error Saving Vehicle",
-            description: error instanceof Error ? error.message : "Failed to save vehicle to database. Please try again.",
+            title: "Database Error",
+            description: "Could not save vehicle to backend.",
             variant: "destructive"
           });
         }
@@ -773,10 +748,17 @@ const handleTestDriveSubmit = async () => {
       <div className="container mx-auto px-4 py-8">
         <CarList 
           cars={filteredCars} 
-          onCarClick={(car) => {
-            console.log('Car clicked:', car);
+          onCarClick={async (car) => {
             setSelectedCarId((car._id || car.id)?.toString());
-            setSelectedCarDetails(car); // Ensure dialog gets car data
+            setLoadingCarDetails(true);
+            try {
+              const fullCar = await fetchCarById(car._id || car.id);
+              setSelectedCarDetails(fullCar);
+            } catch (err) {
+              setSelectedCarDetails(car); // fallback
+            } finally {
+              setLoadingCarDetails(false);
+            }
           }}
           emptyState={
             <>

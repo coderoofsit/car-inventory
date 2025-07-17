@@ -19,6 +19,10 @@ const requirementRoutes = require('./routes/requirementRoutes');
 require('./models/requirement');
 app.use('/api/requirements', requirementRoutes);
 
+// Inspection Report Routes
+const inspectionReportRoutes = require('./routes/inspectionReportRoutes');
+app.use('/api/inspection-reports', inspectionReportRoutes);
+
 // ✅ Connect to MongoDB only once
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
