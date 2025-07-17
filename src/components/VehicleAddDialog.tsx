@@ -11,6 +11,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Progress } from "@/components/ui/progress";
 import { uploadMediaToBackend } from "@/lib/mediaAPI";
 import { vehicleInspectionSchema } from './vehicleInspectionSchema';
+import { toast } from "@/hooks/use-toast";
 
 interface VehicleAddDialogProps {
   isOpen: boolean;
@@ -223,7 +224,7 @@ const handleDialogClose = () => {
     return cleaned;
   };
   // When preparing the payload for saving the vehicle, ensure 'additional' is an array of strings
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate required fields
     const requiredFields = [
       { field: 'brand', label: 'Brand' },
@@ -246,7 +247,11 @@ const handleDialogClose = () => {
 
     if (missingFields.length > 0) {
       const missingFieldNames = missingFields.map(f => f.label).join(', ');
-      alert(`Please fill in all required fields: ${missingFieldNames}`);
+      toast({
+        title: "Missing Required Fields",
+        description: `Please fill in all required fields: ${missingFieldNames}`,
+        variant: "destructive"
+      });
       return;
     }
 
@@ -255,7 +260,11 @@ const handleDialogClose = () => {
       const regDate = new Date(Number(vehicleData.registrationYear), Number(vehicleData.registrationMonth) - 1, 1);
       const insDate = new Date(Number(vehicleData.insuranceValidityYear), Number(vehicleData.insuranceValidityMonth) - 1, 1);
       if (regDate >= insDate) {
-        alert('Registration date must be before Insurance Validity date.');
+        toast({
+          title: "Invalid Dates",
+          description: 'Registration date must be before Insurance Validity date.',
+          variant: "destructive"
+        });
         return;
       }
     }
@@ -269,9 +278,18 @@ const handleDialogClose = () => {
       inspectionReport,
       media: uploadedMedia,
     };
-    onSave(payload);
-    resetForm(); // <-- Reset form state
-    onClose();
+    try {
+      await onSave(payload);
+      resetForm(); // <-- Reset form state
+      onClose();
+    } catch (error) {
+      toast({
+        title: "Error Saving Vehicle",
+        description: error?.message || "Could not save vehicle to backend.",
+        variant: "destructive"
+      });
+      // Do not close or reset form
+    }
   };
 
   // 1. Update featureCategories to match the provided lists
