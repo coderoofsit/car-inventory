@@ -1,83 +1,109 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ArrowLeft, Heart, ChevronLeft, ChevronRight, Home, Edit } from 'lucide-react';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { ArrowLeft, Heart, Home, Edit } from 'lucide-react';
 import { vehicleInspectionSchema } from './vehicleInspectionSchema';
-import { fetchInspectionReportByCarId } from '../lib/vehicleAPI';
+import { fetchCarById, fetchInspectionReportByCarId } from '../lib/vehicleAPI';
+import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import VehicleAddDialog from './VehicleAddDialog';
 
-interface CarDetailDialogProps {
-  car: any; // Use backend object directly
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  loading?: boolean;
+interface CarDetailContentProps {
+  carId: string;
   onEdit?: () => void;
-  onContact?: () => void;
-  onTestDrive?: () => void;
+  onBack?: () => void;
 }
 
 const isVideo = (url: string) => /\.(mp4|mov|avi|webm)$/i.test(url) || url.includes('video');
-
-// Utility function to capitalize first letter of each word
 const toTitleCase = (str: string) => str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 
-const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChange, loading, onEdit = () => {}, onContact, onTestDrive }) => {
+const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack }) => {
+  const [car, setCar] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState('overview');
-  console.log('CarDetailDialog open:', open, 'car:', car);
   const [mediaIndex, setMediaIndex] = useState(0);
-  const isEmbedded = typeof window !== 'undefined' && window.self !== window.top;
   const [inspectionReport, setInspectionReport] = useState<any>(null);
   const [inspectionLoading, setInspectionLoading] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [showTestDriveForm, setShowTestDriveForm] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    message: '',
+    make: '',
+    model: '',
+    year: '',
+    price: ''
+  });
+  const [testDriveForm, setTestDriveForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    preferredDate: '',
+    preferredTime: '',
+    message: ''
+  });
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
-  // Always fetch inspection report from /api/inspection-reports/car/:carId
-  React.useEffect(() => {
-    if (open && car && car._id) {
+  useEffect(() => {
+    if (carId) {
+      setLoading(true);
+      setError(null);
+      fetchCarById(carId)
+        .then((car) => {
+          setCar(car);
+        })
+        .catch(() => {
+          setCar(null);
+          setError('Car not found.');
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [carId]);
+
+  useEffect(() => {
+    if (car && car._id) {
       setInspectionLoading(true);
       fetchInspectionReportByCarId(car._id)
         .then(setInspectionReport)
         .catch(() => setInspectionReport(null))
         .finally(() => setInspectionLoading(false));
     }
-  }, [open, car]);
+  }, [car]);
 
-  React.useEffect(() => {
-    if (!open) {
-      setTab('overview');
-      setMediaIndex(0);
-      setInspectionReport(null);
-      setInspectionLoading(false);
-    }
-  }, [open]);
+  useEffect(() => {
+    setTab('overview');
+    setMediaIndex(0);
+    setInspectionReport(null);
+    setInspectionLoading(false);
+  }, [carId]);
 
   if (loading) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex items-center justify-center min-h-[300px]">
-          <VisuallyHidden>
-            <DialogTitle>Loading Vehicle Details</DialogTitle>
-            <DialogDescription>Loading vehicle details, please wait.</DialogDescription>
-          </VisuallyHidden>
-          <div className="flex flex-col items-center">
-            <svg className="animate-spin h-8 w-8 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-            </svg>
-            <span className="text-lg text-gray-700">Loading vehicle details...</span>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <div className="flex items-center justify-center min-h-[300px] w-full h-full">
+        <svg className="animate-spin h-8 w-8 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+        <span className="text-lg text-gray-700 ml-4">Loading vehicle details...</span>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full py-16">
+        <span className="text-lg text-gray-500">{error}</span>
+        <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded" onClick={onBack}>Back to Home</button>
+      </div>
     );
   }
   if (!car) return null;
   const formatPrice = (price: string | number) => `₹${Number(price).toLocaleString()}`;
-
-  // Use car.media array, fallback to empty
   const media: string[] = Array.isArray(car.media) && car.media.length > 0 ? car.media : [];
-
-  // Overview fields using backend field names directly
   const overviewFields = [
     { label: 'DOORS', value: car.doors || 'Not Specified' },
     { label: 'MILEAGE', value: car.kmRun ? `${car.kmRun} KM` : 'Not Specified' },
@@ -88,27 +114,56 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
     { label: 'TRANSMISSION', value: car.transmissionTypeDetails || 'Not Specified' },
     { label: 'YEAR OF MANUFACTURE', value: car.manufactureYear || 'Not Specified' },
     { label: 'HOME TEST DRIVE', value: car.homeTestDriveDetails || 'Not Specified' },
+    { label: 'VIN', value: car.vin || 'Not Specified' },
+    { label: 'REGISTRATION MONTH', value: car.registrationMonth || 'Not Specified' },
+    { label: 'REGISTRATION YEAR', value: car.registrationYear || 'Not Specified' },
+    { label: 'INSURANCE VALIDITY', value: (car.insuranceValidityMonth && car.insuranceValidityYear) ? `${car.insuranceValidityMonth}/${car.insuranceValidityYear}` : 'Not Specified' },
+    { label: 'ENGINE CAPACITY', value: car.engineCapacity || 'Not Specified' },
+    { label: 'TRIM', value: car.trim || 'Not Specified' },
+    { label: 'STATUS', value: car.status || 'Not Specified' },
+    { label: 'OWNER', value: car.ownerDetails || 'Not Specified' },
+    { label: 'CONDITION', value: car.condition || 'Not Specified' },
+    { label: 'SELLING PRICE', value: car.sellingPrice ? `₹${Number(car.sellingPrice).toLocaleString()}` : 'Not Specified' },
   ];
-
-  // Handlers for media navigation
   const handlePrevMedia = () => setMediaIndex((prev) => (prev === 0 ? media.length - 1 : prev - 1));
   const handleNextMedia = () => setMediaIndex((prev) => (prev === media.length - 1 ? 0 : prev + 1));
   const handleSelectMedia = (idx: number) => setMediaIndex(idx);
 
+  // Contact Us and Test Drive submit handlers (dummy, replace with real logic as needed)
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: Implement contact form submission logic
+    setShowContactForm(false);
+  };
+  const handleTestDriveSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: Implement test drive form submission logic
+    setShowTestDriveForm(false);
+  };
+
+  // Add a handler to update car after edit
+  const handleEditSave = async (vehicleData: any) => {
+    setShowEditDialog(false);
+    // Optionally, update the car details in-place after editing
+    setLoading(true);
+    try {
+      const updatedCar = await fetchCarById(carId);
+      setCar(updatedCar);
+    } catch {
+      // fallback: do nothing
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-<Dialog open={open} onOpenChange={onOpenChange}>
-  <DialogContent className="max-w-4xl w-full p-0 overflow-hidden h-[62vh] flex flex-col">
-    <DialogTitle className='sr-only'>Vehicle Details</DialogTitle>
-    <DialogDescription className='sr-only'>
-      View detailed information about this vehicle, including specifications, features, and media.
-    </DialogDescription>
-    <div className="flex flex-col md:flex-row w-full h-full flex-1 min-h-0">
+    <div className="w-full h-full flex flex-col md:flex-row bg-white">
       {/* Left: Media Section */}
       <div className="w-full md:w-1/2 bg-gray-50 flex flex-col items-center justify-center p-4 h-full">
         {/* Main media preview */}
         <div className="w-full flex items-center justify-center mb-2">
           {media.length > 0 && (
-            <div className="w-full aspect-square bg-black rounded-lg overflow-hidden flex items-center justify-center">
+            <div className="w-full aspect-[4/3] max-h-[60vh] bg-black rounded-lg overflow-hidden flex items-center justify-center">
               {isVideo(media[mediaIndex]) ? (
                 <video
                   src={media[mediaIndex]}
@@ -144,25 +199,21 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
           </div>
         )}
       </div>
-      
       {/* Right: Details Section */}
       <div className="w-full md:w-1/2 flex flex-col min-h-0 h-full p-2">
         {/* Header */}
         <div className="p-6 border-b flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
-            <Button variant="ghost" className="p-0 h-auto" onClick={() => onOpenChange(false)}>
+            <Button variant="ghost" className="p-0 h-auto" onClick={onBack}>
               <ArrowLeft className="mr-2 h-5 w-5 text-black" /> Back
             </Button>
             <div className="flex items-center gap-2">
-              {!isEmbedded && (
-                <Button variant="ghost" className="p-2" onClick={onEdit}>
-                  <Edit />
-                  Edit
-                </Button>
-              )}
+              <Button variant="ghost" className="p-2" onClick={() => setShowEditDialog(true)}>
+                <Edit />
+                Edit
+              </Button>
             </div>
           </div>
-          
           <div className='flex flex-row justify-between items-start'>
             <h1 className="text-3xl font-bold text-gray-900 mb-1">
               {car.manufactureYear} {toTitleCase(car.brand || '')} {toTitleCase(car.model || '')}
@@ -171,7 +222,6 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
               <Heart className="h-10 w-10 text-black" />
             </Button>
           </div>
-          
           <div className="flex items-center gap-2 text-lg text-gray-700 font-normal mb-2">
             <span>{car.kmRun ? `${(car.kmRun/1000).toFixed(car.kmRun%1000===0?0:1)}K km` : 'Not Specified'}</span>
             <span>·</span>
@@ -179,14 +229,12 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
             <span>·</span>
             <span>{car.transmissionTypeDetails ? toTitleCase(car.transmissionTypeDetails) : 'Not Specified'}</span>
           </div>
-          
           {car.homeTestDriveDetails && (
             <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
               <Home className="h-5 w-5 text-black" />
               <span>Home Test Drive: {["yes", "y"].includes((car.homeTestDriveDetails || "").toString().trim().toLowerCase()) ? "Available" : "Unavailable"}</span>
             </div>
           )}
-          
           {typeof car.shortlisted === 'number' && (
             <div className="text-right">
               <span className="text-sm text-gray-500">{car.shortlisted} people</span>
@@ -195,9 +243,8 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
             </div>
           )}
         </div>
-
         {/* Tabs - This takes remaining space and is constrained */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden h-0">
+        <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden">
           <Tabs value={tab} onValueChange={setTab} className="w-full h-full flex flex-col">
             <TabsList className="w-full justify-start rounded-none border-b bg-transparent h-auto p-0 flex-shrink-0">
               <TabsTrigger 
@@ -225,9 +272,8 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
                 Inspection Report
               </TabsTrigger>
             </TabsList>
-            
             {/* Tab content area always fills and scrolls */}
-            <div className="flex-1 min-h-0 h-full">
+            <div className="flex-1 min-h-0 h-full overflow-y-auto">
               <TabsContent 
                 value="overview" 
                 className="p-2 flex-1 flex flex-col data-[state=inactive]:hidden min-h-0 h-full overflow-y-auto"
@@ -240,25 +286,39 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
                     </div>
                   ))}
                 </div>
-                
                 {/* Buttons at bottom */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-end mt-auto flex-shrink-0">
                   <Button
                     variant="outline"
                     className="flex-1 transition-colors duration-150 border-blue-600 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100 active:text-blue-900 focus:ring-2 focus:ring-blue-300"
-                    onClick={onContact}
+                    onClick={() => {
+                      setContactForm(form => ({
+                        ...form,
+                        make: car.brand || '',
+                        model: car.model || '',
+                        year: car.manufactureYear?.toString() || '',
+                        price: car.sellingPrice?.toString() || ''
+                      }));
+                      setShowContactForm(true);
+                    }}
                   >
                     Contact Us
                   </Button>
                   <Button
                     className="flex-1 bg-blue-600 text-white transition-colors duration-150 hover:bg-blue-700 hover:text-white active:bg-blue-800 active:text-white focus:ring-2 focus:ring-blue-300"
-                    onClick={onTestDrive}
+                    onClick={() => {
+                      setTestDriveForm(form => ({
+                        ...form,
+                        // Optionally pre-fill name/email/phone if you have user info
+                        message: '',
+                      }));
+                      setShowTestDriveForm(true);
+                    }}
                   >
                     Book a Test Drive
                   </Button>
                 </div>
               </TabsContent>
-              
               <TabsContent 
                 value="description" 
                 className="p-2 flex-1 overflow-y-auto data-[state=inactive]:hidden min-h-0 h-full"
@@ -268,7 +328,6 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
                   <p className="text-gray-700 text-base">{car.description || 'No description provided.'}</p>
                 </div>
               </TabsContent>
-              
               <TabsContent 
                 value="features" 
                 className="p-2 flex-1 overflow-y-auto data-[state=inactive]:hidden min-h-0 h-full"
@@ -291,7 +350,6 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
                   )}
                 </div>
               </TabsContent>
-
               <TabsContent 
                 value="inspection" 
                 className="p-6 flex-1 overflow-y-auto data-[state=inactive]:hidden min-h-0 h-full"
@@ -312,7 +370,6 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {Object.entries(fields).map(([field]) => {
                                 const value = inspectionReport[section]?.[field];
-                                // Hide if value is empty string, undefined, null, 'NA', 'Not Applicable', or 0 (number)
                                 if (
                                   value === '' ||
                                   value === undefined ||
@@ -345,10 +402,122 @@ const CarDetailDialog: React.FC<CarDetailDialogProps> = ({ car, open, onOpenChan
           </Tabs>
         </div>
       </div>
+
+      {/* Contact Us Dialog */}
+      <Dialog open={showContactForm} onOpenChange={setShowContactForm}>
+        <DialogContent>
+          <DialogTitle>Contact Us</DialogTitle>
+          <form
+            onSubmit={handleContactSubmit}
+            className="space-y-4"
+          >
+            <Input
+              placeholder="Name"
+              value={contactForm.name}
+              onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
+              required
+            />
+            <Input
+              placeholder="Email"
+              value={contactForm.email}
+              onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
+              required
+            />
+            <Input
+              placeholder="Phone"
+              value={contactForm.phone}
+              onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
+              required
+            />
+            <Input
+              placeholder="Make"
+              value={contactForm.make}
+              onChange={e => setContactForm({ ...contactForm, make: e.target.value })}
+            />
+            <Input
+              placeholder="Model"
+              value={contactForm.model}
+              onChange={e => setContactForm({ ...contactForm, model: e.target.value })}
+            />
+            <Input
+              placeholder="Year"
+              value={contactForm.year}
+              onChange={e => setContactForm({ ...contactForm, year: e.target.value })}
+            />
+            <Input
+              placeholder="Price"
+              value={contactForm.price}
+              onChange={e => setContactForm({ ...contactForm, price: e.target.value })}
+            />
+            <Textarea
+              placeholder="Message"
+              value={contactForm.message}
+              onChange={e => setContactForm({ ...contactForm, message: e.target.value })}
+            />
+            <Button type="submit" className="w-full">Send</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Book a Test Drive Dialog */}
+      <Dialog open={showTestDriveForm} onOpenChange={setShowTestDriveForm}>
+        <DialogContent>
+          <DialogTitle>Book a Test Drive</DialogTitle>
+          <form
+            onSubmit={handleTestDriveSubmit}
+            className="space-y-4"
+          >
+            <Input
+              placeholder="Name"
+              value={testDriveForm.name}
+              onChange={e => setTestDriveForm({ ...testDriveForm, name: e.target.value })}
+              required
+            />
+            <Input
+              placeholder="Email"
+              value={testDriveForm.email}
+              onChange={e => setTestDriveForm({ ...testDriveForm, email: e.target.value })}
+              required
+            />
+            <Input
+              placeholder="Phone"
+              value={testDriveForm.phone}
+              onChange={e => setTestDriveForm({ ...testDriveForm, phone: e.target.value })}
+              required
+            />
+            <Input
+              placeholder="Preferred Date"
+              type="date"
+              value={testDriveForm.preferredDate}
+              onChange={e => setTestDriveForm({ ...testDriveForm, preferredDate: e.target.value })}
+              required
+            />
+            <Input
+              placeholder="Preferred Time"
+              type="time"
+              value={testDriveForm.preferredTime}
+              onChange={e => setTestDriveForm({ ...testDriveForm, preferredTime: e.target.value })}
+            />
+            <Textarea
+              placeholder="Message"
+              value={testDriveForm.message}
+              onChange={e => setTestDriveForm({ ...testDriveForm, message: e.target.value })}
+            />
+            <Button type="submit" className="w-full">Book Test Drive</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Vehicle Dialog */}
+      <VehicleAddDialog
+        isOpen={showEditDialog}
+        onClose={() => setShowEditDialog(false)}
+        onSave={handleEditSave}
+        editCar={car}
+        mode="edit"
+      />
     </div>
-  </DialogContent>
-</Dialog>
   );
 };
 
-export default CarDetailDialog;
+export default CarDetailContent; 

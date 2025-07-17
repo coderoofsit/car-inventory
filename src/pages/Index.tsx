@@ -16,7 +16,6 @@ import { toast } from "@/hooks/use-toast";
 import VehicleAddDialog from "@/components/VehicleAddDialog";
 import CarList from "@/components/CarList";
 import { saveVehicleToBackend, fetchVehiclesFromBackend, fetchCarById, fetchFilterMetadataFromBackend } from "@/lib/vehicleAPI";
-import CarDetailDialog from "@/components/CarDetailDialog";
 import { findFirstMediaUrl, Car } from "@/lib/utils";
 import VehicleFilterComponent, { VehicleFilters } from '@/components/VehicleFilterComponent';
 const isEmbedded = window.self !== window.top;
@@ -106,9 +105,6 @@ const [cars, setCars] = useState<Car[]>([]);
 const [filteredCars, setFilteredCars] = useState<Car[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMake, setSelectedMake] = useState<string>('all');
-  const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
-  const [selectedCarDetails, setSelectedCarDetails] = useState<any>(null);
-  const [loadingCarDetails, setLoadingCarDetails] = useState(false);
   const [isAddCarOpen, setIsAddCarOpen] = useState(false);
   const [isIntegrateOpen, setIsIntegrateOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
@@ -675,8 +671,8 @@ const handleTestDriveSubmit = async () => {
           // Save to backend (now includes inspectionReport if present)
           const savedVehicle = await saveVehicleToBackend(vehicleData);
           // Use the response directly for dialog
-          setSelectedCarDetails(savedVehicle);
-          setSelectedCarId(savedVehicle._id);
+          setCars(prev => [...prev, savedVehicle as Car]);
+          setFilteredCars(prev => [...prev, savedVehicle as Car]);
           setIsAddCarOpen(false);
           setUploadedMedia([]);
           setNewCar({
@@ -748,18 +744,6 @@ const handleTestDriveSubmit = async () => {
       <div className="container mx-auto px-4 py-8">
         <CarList 
           cars={filteredCars} 
-          onCarClick={async (car) => {
-            setSelectedCarId((car._id || car.id)?.toString());
-            setLoadingCarDetails(true);
-            try {
-              const fullCar = await fetchCarById(car._id || car.id);
-              setSelectedCarDetails(fullCar);
-            } catch (err) {
-              setSelectedCarDetails(car); // fallback
-            } finally {
-              setLoadingCarDetails(false);
-            }
-          }}
           emptyState={
             <>
               <div>No cars found for your filters.</div>
@@ -770,34 +754,6 @@ const handleTestDriveSubmit = async () => {
           }
         />
       </div>
-
-      {/* Car Detail Modal */}
-      <CarDetailDialog
-        car={selectedCarDetails}
-        open={!!selectedCarId}
-        onOpenChange={open => {
-          if (!open) {
-            setSelectedCarId(null);
-            setSelectedCarDetails(null);
-          }
-        }}
-        loading={loadingCarDetails}
-        onEdit={() => {
-          setEditCar(selectedCarDetails);
-          setIsEditCarOpen(true);
-        }}
-        onContact={() => {
-          setContactForm(form => ({
-            ...form,
-            make: selectedCarDetails?.brand || selectedCarDetails?.make || '',
-            model: selectedCarDetails?.model || '',
-            year: selectedCarDetails?.manufactureYear?.toString() || selectedCarDetails?.year?.toString() || '',
-            price: selectedCarDetails?.sellingPrice?.toString() || selectedCarDetails?.price?.toString() || ''
-          }));
-          setShowContactForm(true);
-        }}
-        onTestDrive={() => setShowTestDriveForm(true)}
-      />
 
       {/* Contact Us Dialog */}
       {/*    */}
@@ -929,7 +885,6 @@ const handleTestDriveSubmit = async () => {
               setFilteredCars(prev => prev.map(car => (car._id === updatedCar._id ? updatedCar : car)));
               setIsEditCarOpen(false);
               setEditCar(null);
-              setSelectedCarDetails(updatedCar);
               toast({ title: 'Car updated', description: 'Vehicle details updated successfully.' });
             } catch (err) {
               toast({ title: 'Error', description: 'Failed to update car.', variant: 'destructive' });

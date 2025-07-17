@@ -78,7 +78,7 @@ export async function fetchVehiclesFromBackend(params?: Record<string, any>): Pr
 
 export async function fetchCarById(id: string) {
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-  const res = await fetch(`${backendUrl}/api/cars/${id}`);
+  const res = await fetch(`${backendUrl}/api/${id}`);
   if (!res.ok) throw new Error('Failed to fetch car');
   return await res.json();
 }

@@ -246,17 +246,25 @@ router.put('/cars/:id', async (req, res) => {
 // GET a single car by ID (with inspection report)
 router.get('/:id', async (req, res) => {
   try {
-    const car = await Car.findById(req.params.id).lean();
+    console.log(`[carRoutes] GET /:id called with id: ${req.params.id}`);
+    let car = await Car.findById(req.params.id).lean();
+    console.log(`[carRoutes] findById result:`, car);
     if (!car) {
+      car = await Car.findOne({ _id: req.params.id }).lean();
+      console.log(`[carRoutes] findOne({_id: id}) result:`, car);
+    }
+    if (!car) {
+      console.log(`[carRoutes] Car not found for id: ${req.params.id}`);
       return res.status(404).json({ error: 'Car not found' });
     }
     const inspectionReport = await InspectionReport.findOne({ car: car._id }).lean();
+    console.log(`[carRoutes] Inspection report:`, inspectionReport);
     res.json({ ...car, inspectionReport });
   } catch (err) {
+    console.error(`[carRoutes] Error in GET /:id:`, err);
     res.status(500).json({ error: err.message });
   }
 });
-
 // Test route for debugging
 router.get('/test', (req, res) => {
   console.log('[carRoutes] GET /test - Test route hit');

@@ -1,13 +1,14 @@
 import React from 'react';
 import { Heart, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getCarCardMediaUrl } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface CarCardProps {
   car: any; // Use backend object directly
   onClick?: () => void;
 }
 
-const CarCard: React.FC<CarCardProps> = ({ car, onClick }) => {
+const CarCard: React.FC<CarCardProps> = ({ car }) => {
   const placeholder = 'https://via.placeholder.com/400x300?text=No+Image';
   const [mediaIndex, setMediaIndex] = React.useState(0);
   const mediaArr: string[] = Array.isArray(car.media) && car.media.length > 0 ? car.media : [];
@@ -29,10 +30,18 @@ const CarCard: React.FC<CarCardProps> = ({ car, onClick }) => {
   // Format price and mileage
   const formatNumber = (n: string | number) => n ? n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-';
 
+  const navigate = useNavigate();
+  const handleCardClick = () => {
+    if (car._id) {
+      console.log('Navigating to car with _id:', car._id);
+      navigate(`/car/${car._id}`);
+    }
+  };
+
   return (
     <div
       className="bg-white rounded-xl shadow-md p-0 overflow-hidden cursor-pointer hover:shadow-lg transition w-full sm:w-80"
-      onClick={onClick}
+      onClick={handleCardClick}
     >
       <div className="relative w-full h-40 sm:h-52 bg-gray-100">
         {currentMedia ? (
