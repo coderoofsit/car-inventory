@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { ArrowLeft, Heart, Home, Edit } from 'lucide-react';
 import { vehicleInspectionSchema } from './vehicleInspectionSchema';
-import { fetchCarById, fetchInspectionReportByCarId } from '../lib/vehicleAPI';
+import { fetchCarById, fetchInspectionReportByCarId, updateVehicleToBackend } from '../lib/vehicleAPI';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -14,12 +14,13 @@ interface CarDetailContentProps {
   carId: string;
   onEdit?: () => void;
   onBack?: () => void;
+  onEditSuccess?: () => void;
 }
 
 const isVideo = (url: string) => /\.(mp4|mov|avi|webm)$/i.test(url) || url.includes('video');
 const toTitleCase = (str: string) => str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 
-const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack }) => {
+const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEditSuccess }) => {
   const [car, setCar] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +106,6 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack }) =>
   const formatPrice = (price: string | number) => `₹${Number(price).toLocaleString()}`;
   const media: string[] = Array.isArray(car.media) && car.media.length > 0 ? car.media : [];
   const overviewFields = [
-    { label: 'DOORS', value: car.doors || 'Not Specified' },
     { label: 'MILEAGE', value: car.kmRun ? `${car.kmRun} KM` : 'Not Specified' },
     { label: 'EXTERIOR COLOR', value: car.exteriorColorDetails || 'Not Specified' },
     { label: 'INTERIOR COLOR', value: car.interiorColorDetails || 'Not Specified' },
@@ -144,17 +144,20 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack }) =>
   // Add a handler to update car after edit
   const handleEditSave = async (vehicleData: any) => {
     setShowEditDialog(false);
-    // Optionally, update the car details in-place after editing
     setLoading(true);
     try {
+      await updateVehicleToBackend(carId, vehicleData);
       const updatedCar = await fetchCarById(carId);
       setCar(updatedCar);
+      if (typeof onEditSuccess === 'function') onEditSuccess();
     } catch {
       // fallback: do nothing
     } finally {
       setLoading(false);
     }
   };
+
+  const isEmbedded = window.self !== window.top;
 
   return (
     <div className="w-full h-full flex flex-col md:flex-row bg-white">
@@ -204,14 +207,16 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack }) =>
         {/* Header */}
         <div className="p-6 border-b flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
-            <Button variant="ghost" className="p-0 h-auto" onClick={onBack}>
-              <ArrowLeft className="mr-2 h-5 w-5 text-black" /> Back
+            <Button variant="ghost" className="p-0 h-auto text-lg px-6 py-3" onClick={onBack}>
+              <ArrowLeft className="mr-2 h-7 w-7 text-black" /> Back
             </Button>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" className="p-2" onClick={() => setShowEditDialog(true)}>
-                <Edit />
-                Edit
-              </Button>
+              {!isEmbedded && (
+                <Button variant="ghost" className="p-2 text-lg px-6 py-3" onClick={() => setShowEditDialog(true)}>
+                  <Edit className="h-7 w-7" />
+                  Edit
+                </Button>
+              )}
             </div>
           </div>
           <div className='flex flex-row justify-between items-start'>

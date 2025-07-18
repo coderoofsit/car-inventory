@@ -15,9 +15,10 @@ import { Search, Plus, Filter, Heart, Eye, Code, Globe, Copy, CheckCircle, Uploa
 import { toast } from "@/hooks/use-toast";
 import VehicleAddDialog from "@/components/VehicleAddDialog";
 import CarList from "@/components/CarList";
-import { saveVehicleToBackend, fetchVehiclesFromBackend, fetchCarById, fetchFilterMetadataFromBackend } from "@/lib/vehicleAPI";
+import { saveVehicleToBackend, fetchVehiclesFromBackend, fetchCarById, fetchFilterMetadataFromBackend, updateVehicleToBackend } from "@/lib/vehicleAPI";
 import { findFirstMediaUrl, Car } from "@/lib/utils";
 import VehicleFilterComponent, { VehicleFilters } from '@/components/VehicleFilterComponent';
+import { Link } from 'react-router-dom';
 const isEmbedded = window.self !== window.top;
 
 const sampleCars: Car[] = [
@@ -659,6 +660,11 @@ const handleTestDriveSubmit = async () => {
       <Plus className="h-4 w-4" />
       Add vehicle(s)
     </Button>
+    <Link to="/admin">
+      <Button className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold">
+        Admin
+      </Button>
+    </Link>
     <VehicleAddDialog
       isOpen={isAddCarOpen}
       onClose={() => setIsAddCarOpen(false)}
@@ -874,13 +880,7 @@ const handleTestDriveSubmit = async () => {
           // If editCar is set, update the car
           if (editCar && editCar._id) {
             try {
-              const response = await fetch(`http://localhost:5000/api/cars/${editCar._id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(vehicleData),
-              });
-              if (!response.ok) throw new Error('Failed to update car');
-              const updatedCar = await response.json();
+              const updatedCar = await updateVehicleToBackend(editCar._id, vehicleData);
               setCars(prev => prev.map(car => (car._id === updatedCar._id ? updatedCar : car)));
               setFilteredCars(prev => prev.map(car => (car._id === updatedCar._id ? updatedCar : car)));
               setIsEditCarOpen(false);

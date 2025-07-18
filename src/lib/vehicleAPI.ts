@@ -35,6 +35,41 @@ export async function saveVehicleToBackend(vehicleData: any): Promise<any> {
 }
 
 /**
+ * Updates a vehicle in the backend database.
+ * @param {string} id - The vehicle ID to update.
+ * @param {any} vehicleData - The updated vehicle data.
+ * @returns {Promise<any>} - Resolves to the updated vehicle data from the backend.
+ *
+ * Usage:
+ *   import { updateVehicleToBackend } from './vehicleAPI';
+ */
+export async function updateVehicleToBackend(id: string, vehicleData: any): Promise<any> {
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const updateUrl = `${backendUrl}/api/cars/${id}`;
+
+  try {
+    const response = await fetch(updateUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(vehicleData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    const updatedVehicle = await response.json();
+    return updatedVehicle;
+  } catch (error) {
+    console.error('Error updating vehicle to backend:', error);
+    throw error;
+  }
+}
+
+/**
  * Fetches all vehicles from the backend database.
  * @returns {Promise<any[]>} - Resolves to an array of vehicles.
  *
