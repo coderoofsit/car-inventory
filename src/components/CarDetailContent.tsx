@@ -9,12 +9,17 @@ import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import VehicleAddDialog from './VehicleAddDialog';
+import ContactUsDialog from "@/components/ContactUsDialog";
+import TestDriveDialog from "@/components/TestDriveDialog";
+import { handleContactSubmit, handleTestDriveSubmit } from "@/lib/formHandlers";
 
 interface CarDetailContentProps {
   carId: string;
   onEdit?: () => void;
   onBack?: () => void;
   onEditSuccess?: () => void;
+  onContactSubmit?: (formData: any, car: any) => Promise<boolean | void>;
+  onTestDriveSubmit?: (formData: any, car: any) => Promise<boolean | void>;
 }
 
 const isVideo = (url: string) => /\.(mp4|mov|avi|webm)$/i.test(url) || url.includes('video');
@@ -35,7 +40,12 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
     email: '',
     phone: '',
     message: '',
-    carExchange: false
+    customField: {
+      carExchange: false,
+      make: '',
+      model: '',
+      year: ''
+    }
   });
   const [testDriveForm, setTestDriveForm] = useState({
     name: '',
@@ -44,7 +54,12 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
     preferredDate: '',
     preferredTime: '',
     message: '',
-    carExchange: false
+    customField: {
+      carExchange: false,
+      make: '',
+      model: '',
+      year: ''
+    }
   });
   const [showEditDialog, setShowEditDialog] = useState(false);
 
@@ -126,50 +141,6 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
   const handlePrevMedia = () => setMediaIndex((prev) => (prev === 0 ? media.length - 1 : prev - 1));
   const handleNextMedia = () => setMediaIndex((prev) => (prev === media.length - 1 ? 0 : prev + 1));
   const handleSelectMedia = (idx: number) => setMediaIndex(idx);
-
-  // Contact Us and Test Drive submit handlers
-  const handleContactSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!contactForm.name || !contactForm.email || !contactForm.phone) {
-      // You can add toast notification here if needed
-      return;
-    }
-
-    try {
-      // Send to backend
-      await fetch('http://localhost:5000/api/contacts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(contactForm),
-      });
-      
-      // Reset form and close dialog
-      setContactForm({ name: '', email: '', phone: '', message: '', carExchange: false });
-      setShowContactForm(false);
-    } catch (err) {
-      console.error('Error submitting contact form:', err);
-    }
-  };
-  const handleTestDriveSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!testDriveForm.name || !testDriveForm.email || !testDriveForm.phone || !testDriveForm.preferredDate) {
-      // You can add toast notification here if needed
-      return;
-    }
-
-    try {
-      // Send to backend (you can create a test drive endpoint if needed)
-      // For now, we'll just reset the form
-      
-      // Reset form and close dialog
-      setTestDriveForm({ name: '', email: '', phone: '', preferredDate: '', preferredTime: '', message: '', carExchange: false });
-      setShowTestDriveForm(false);
-    } catch (err) {
-      console.error('Error submitting test drive form:', err);
-    }
-  };
 
   // Add a handler to update car after edit
   const handleEditSave = async (vehicleData: any) => {
@@ -328,7 +299,13 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
                     className="flex-1 transition-colors duration-150 border-blue-600 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100 active:text-blue-900 focus:ring-2 focus:ring-blue-300"
                     onClick={() => {
                       setContactForm(form => ({
-                        ...form
+                        ...form,
+                        customField: {
+                          ...form.customField,
+                          make: car.brand || '',
+                          model: car.model || '',
+                          year: car.manufactureYear?.toString() || ''
+                        }
                       }));
                       setShowContactForm(true);
                     }}
@@ -340,8 +317,12 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
                     onClick={() => {
                       setTestDriveForm(form => ({
                         ...form,
-                        // Optionally pre-fill name/email/phone if you have user info
-                        message: '',
+                        customField: {
+                          ...form.customField,
+                          make: car.brand || '',
+                          model: car.model || '',
+                          year: car.manufactureYear?.toString() || ''
+                        }
                       }));
                       setShowTestDriveForm(true);
                     }}
@@ -435,113 +416,34 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
       </div>
 
       {/* Contact Us Dialog */}
-      <Dialog open={showContactForm} onOpenChange={setShowContactForm}>
-        <DialogContent>
-          <DialogTitle>Contact Us</DialogTitle>
-          <form
-            onSubmit={handleContactSubmit}
-            className="space-y-4"
-          >
-            <Input
-              placeholder="Name"
-              value={contactForm.name}
-              onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Email"
-              value={contactForm.email}
-              onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Phone"
-              value={contactForm.phone}
-              onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
-              required
-            />
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="carExchange"
-                checked={contactForm.carExchange}
-                onChange={e => setContactForm({ ...contactForm, carExchange: e.target.checked })}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="carExchange" className="text-sm font-medium text-gray-700">
-                Are you looking to exchange your car?
-              </label>
-            </div>
-            <Textarea
-              placeholder="Message"
-              value={contactForm.message}
-              onChange={e => setContactForm({ ...contactForm, message: e.target.value })}
-            />
-            <Button type="submit" className="w-full">Send</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ContactUsDialog
+        open={showContactForm}
+        onOpenChange={setShowContactForm}
+        onSubmit={async (form) => {
+          const success = await handleContactSubmit(form, car);
+          if (success) {
+            setContactForm({ name: '', email: '', phone: '', message: '', customField: { carExchange: false, make: '', model: '', year: '' } });
+            setShowContactForm(false);
+          }
+        }}
+        formState={contactForm}
+        setFormState={setContactForm}
+      />
 
       {/* Book a Test Drive Dialog */}
-      <Dialog open={showTestDriveForm} onOpenChange={setShowTestDriveForm}>
-        <DialogContent>
-          <DialogTitle>Book a Test Drive</DialogTitle>
-          <form
-            onSubmit={handleTestDriveSubmit}
-            className="space-y-4"
-          >
-            <Input
-              placeholder="Name"
-              value={testDriveForm.name}
-              onChange={e => setTestDriveForm({ ...testDriveForm, name: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Email"
-              value={testDriveForm.email}
-              onChange={e => setTestDriveForm({ ...testDriveForm, email: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Phone"
-              value={testDriveForm.phone}
-              onChange={e => setTestDriveForm({ ...testDriveForm, phone: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Preferred Date"
-              type="date"
-              value={testDriveForm.preferredDate}
-              onChange={e => setTestDriveForm({ ...testDriveForm, preferredDate: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Preferred Time"
-              type="time"
-              value={testDriveForm.preferredTime}
-              onChange={e => setTestDriveForm({ ...testDriveForm, preferredTime: e.target.value })}
-            />
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="testDriveCarExchange"
-                checked={testDriveForm.carExchange}
-                onChange={e => setTestDriveForm({ ...testDriveForm, carExchange: e.target.checked })}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="testDriveCarExchange" className="text-sm font-medium text-gray-700">
-                Are you looking to exchange your car?
-              </label>
-            </div>
-            <Textarea
-              placeholder="Message"
-              value={testDriveForm.message}
-              onChange={e => setTestDriveForm({ ...testDriveForm, message: e.target.value })}
-            />
-            <Button type="submit" className="w-full">Book Test Drive</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <TestDriveDialog
+        open={showTestDriveForm}
+        onOpenChange={setShowTestDriveForm}
+        onSubmit={async (form) => {
+          const success = await handleTestDriveSubmit(form, car);
+          if (success) {
+            setTestDriveForm({ name: '', email: '', phone: '', preferredDate: '', preferredTime: '', message: '', customField: { carExchange: false, make: '', model: '', year: '' } });
+            setShowTestDriveForm(false);
+          }
+        }}
+        formState={testDriveForm}
+        setFormState={setTestDriveForm}
+      />
 
       {/* Edit Vehicle Dialog */}
       <VehicleAddDialog

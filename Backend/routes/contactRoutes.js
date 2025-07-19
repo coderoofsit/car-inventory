@@ -5,7 +5,7 @@ const Contact = require('../models/contact');
 // POST /api/contacts - Create a new contact
 router.post('/', async (req, res) => {
   try {
-    const { name, email, phone, message, carExchange } = req.body;
+    const { name, email, phone, message, customField } = req.body;
     if (!name || !email || !phone) {
       console.log('❌ Contact POST failed: missing required fields', req.body);
       return res.status(400).json({ error: 'Name, email, and phone are required.' });
@@ -15,9 +15,7 @@ router.post('/', async (req, res) => {
       email,
       phone,
       message,
-      customField: {
-        carExchange: carExchange || false
-      }
+      customField: customField || {}
     });
     await contact.save();
     console.log('✅ Contact saved successfully:', contact);

@@ -22,7 +22,7 @@ export interface Car {
   condition: string;
   description: string;
   vin: string;
-  availability: 'Available' | 'Sold' | 'Reserved';
+  status: 'Available' | 'Sold' | 'Reserved' | 'Pending';
 }
 
 // Utility function to find the first image URL from an array

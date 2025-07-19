@@ -19,73 +19,13 @@ import { saveVehicleToBackend, fetchVehiclesFromBackend, fetchCarById, fetchFilt
 import { findFirstMediaUrl, Car } from "@/lib/utils";
 import VehicleFilterComponent, { VehicleFilters } from '@/components/VehicleFilterComponent';
 import { Link } from 'react-router-dom';
+import { handleContactSubmit, handleTestDriveSubmit } from "@/lib/formHandlers";
+import ContactUsDialog from "@/components/ContactUsDialog";
+import TestDriveDialog from "@/components/TestDriveDialog";
 const isEmbedded = window.self !== window.top;
 
 const sampleCars: Car[] = [
-  {
-    id: 1,
-    make: "Toyota",
-    model: "Camry XSE",
-    year: 2020,
-    price: 28500,
-    mileage: 35000,
-    location: "Los Angeles, CA",
-    fuel: "Hybrid",
-    transmission: "Automatic",
-    media: ["https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"],
-    condition: "Excellent",
-    description: "Well-maintained Toyota Camry XSE with hybrid engine. Single owner, service records available.",
-    vin: "1HGCM82633A004352",
-    availability: 'Available'
-  },
-  {
-    id: 2,
-    make: "Volkswagen",
-    model: "Vento Sedan",
-    year: 2015,
-    price: 15500,
-    mileage: 65000,
-    location: "New York, NY",
-    fuel: "Gasoline",
-    transmission: "Manual",
-    media: ["https://images.unsplash.com/photo-1555215695-3004980ad54e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"],
-    condition: "Good",
-    description: "Reliable Volkswagen Vento with excellent fuel efficiency. Regular maintenance records.",
-    vin: "WVWM113C3CA000222",
-    availability: 'Available'
-  },
-  {
-    id: 3,
-    make: "Maruti Suzuki",
-    model: "Baleno Hatchback",
-    year: 2014,
-    price: 12000,
-    mileage: 85000,
-    location: "San Francisco, CA",
-    fuel: "Gasoline",
-    transmission: "Manual",
-    media: ["https://images.unsplash.com/photo-1560958089-b8a1929cea89?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"],
-    condition: "Good",
-    description: "Compact and efficient Maruti Suzuki Baleno. Perfect for city driving.",
-    vin: "WVWM113C3CA000532",
-    availability: 'Available'
-  },
-  {
-    id: 4,
-    make: "Honda",
-    model: "City AT",
-    year: 2018,
-    price: 18500,
-    mileage: 45000,
-    location: "Chicago, IL",
-    fuel: "Gasoline",
-    transmission: "Automatic",
-    media: ["https://images.unsplash.com/photo-1619767886558-efdc259cde1a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"],
-    condition: "Very Good",
-    description: "Honda City with automatic transmission. Comfortable and reliable sedan.",
-    vin: "WVWM113C3CA000535",
-    availability: 'Available'
-  }
+ 
 ];
 
 // Debounce utility
@@ -104,6 +44,25 @@ function useDebouncedEffect(effect: () => void, deps: React.DependencyList, dela
 const Index = () => {
 const [cars, setCars] = useState<Car[]>([]);
 const [filteredCars, setFilteredCars] = useState<Car[]>([]);
+const [showFilters, setShowFilters] = useState(false);
+const [newCar, setNewCar] = useState({
+  make: '', model: '', year: '', price: '', mileage: '', location: '',
+  fuel: '', transmission: '', condition: '', description: '', media: [] as string[], vin: ''
+});
+const [filterMeta, setFilterMeta] = useState<any>(null);
+const getDefaultFilterState = (meta: any) => ({
+  brands: [],
+  models: [],
+  bodyStyles: [],
+  fuelTypes: [],
+  transmission: '',
+  ownership: '',
+  yearRange: { min: meta?.minYear ?? 2000, max: meta?.maxYear ?? 2024 },
+  priceRange: { min: meta?.minPrice ?? 0, max: meta?.maxPrice ?? 1000000 },
+  kmRunRange: { min: meta?.minKmRun ?? 0, max: meta?.maxKmRun ?? 200000 }
+});
+const [filters, setFilters] = useState<VehicleFilters>(getDefaultFilterState({}));
+const [pendingFilters, setPendingFilters] = useState<VehicleFilters>(getDefaultFilterState({}));
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMake, setSelectedMake] = useState<string>('all');
   const [isAddCarOpen, setIsAddCarOpen] = useState(false);
@@ -117,50 +76,13 @@ style="width: 100%; height: 600px; border: 1px solid #e5e7eb; border-radius: 8px
 frameborder="0">
 </iframe>`);
   const [copied, setCopied] = useState(false);
-  const [contactForm, setContactForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    message: '',
-    carExchange: false
-  });
-  const [testDriveForm, setTestDriveForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    preferredDate: '',
-    preferredTime: '',
-    message: '',
-    carExchange: false
-  });
-  const [showContactForm, setShowContactForm] = useState(false);
-  const [showTestDriveForm, setShowTestDriveForm] = useState(false);
-
-  // Filter metadata state
-  const [filterMeta, setFilterMeta] = useState<any>(null);
-
-  // Default filter state using dynamic min/max
-  const getDefaultFilterState = (meta: any) => ({
-    brands: [],
-    models: [],
-    bodyStyles: [],
-    fuelTypes: [],
-    transmission: '',
-    ownership: '',
-    yearRange: { min: meta?.minYear ?? 2000, max: meta?.maxYear ?? 2024 },
-    priceRange: { min: meta?.minPrice ?? 0, max: meta?.maxPrice ?? 1000000 },
-    kmRunRange: { min: meta?.minKmRun ?? 0, max: meta?.maxKmRun ?? 200000 }
-  });
-  
-  // Filter states
-  const [filters, setFilters] = useState<VehicleFilters>(getDefaultFilterState({}));
-  const [pendingFilters, setPendingFilters] = useState<VehicleFilters>(getDefaultFilterState({}));
-  
-  const [newCar, setNewCar] = useState({
-    make: '', model: '', year: '', price: '', mileage: '', location: '',
-    fuel: '', transmission: '', condition: '', description: '', media: [] as string[], vin: ''
-  });
-  const [showFilters, setShowFilters] = useState(false);
+  // Remove all state and JSX related to:
+  // - showContactForm, setShowContactForm
+  // - contactForm, setContactForm
+  // - showTestDriveForm, setShowTestDriveForm
+  // - testDriveForm, setTestDriveForm
+  // - ContactUsDialog
+  // - TestDriveDialog
   // Add state for edit mode and car to edit
   const [isEditCarOpen, setIsEditCarOpen] = useState(false);
   const [editCar, setEditCar] = useState(null);
@@ -440,121 +362,6 @@ const handleAddCar = async () => {
 
   // ✅ REPLACED handleContactSubmit and handleTestDriveSubmit below
 
-const handleContactSubmit = async () => {
-  if (!contactForm.name || !contactForm.email || !contactForm.phone) {
-    toast({
-      title: "Missing Information",
-      description: "Please fill in all required fields.",
-      variant: "destructive"
-    });
-    return;
-  }
-
-  // Send to backend
-  try {
-    await fetch('http://localhost:5000/api/contacts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(contactForm),
-    });
-  } catch (err) {
-    toast({
-      title: "Backend Error",
-      description: "Could not save contact to backend.",
-      variant: "destructive"
-    });
-    // Continue to CRM even if backend fails
-  }
-
-  try {
-    const contactPayload = {
-      locationId: "dvLotMiifOU7u2891LNr",
-      firstName: contactForm.name,
-      email: contactForm.email,
-      phone: contactForm.phone,
-      customField: {
-        message: contactForm.message,
-        carExchange: contactForm.carExchange
-      },
-      tags: ["Website Contact"]
-    };
-
-    await createContact(contactPayload);
-
-    toast({
-      title: "Message Sent!",
-      description: "We'll contact you soon about this vehicle."
-    });
-  } catch (error) {
-    console.error("GHL Contact Error:", error);
-    toast({
-      title: "Submission Failed",
-      description: "Failed to send contact to CRM.",
-      variant: "destructive"
-    });
-  }
-
-  setContactForm({ name: '', email: '', phone: '', message: '', carExchange: false });
-  setShowContactForm(false);
-};
-const handleTestDriveSubmit = async () => {
-  if (!testDriveForm.name || !testDriveForm.email || !testDriveForm.phone || !testDriveForm.preferredDate) {
-    toast({
-      title: "Missing Information",
-      description: "Please fill in all required fields.",
-      variant: "destructive"
-    });
-    return;
-  }
-
-  try {
-    // 1️⃣ Create the contact first
-    await createContact({
-      locationId: "dvLotMiifOU7u2891LNr",
-      firstName: testDriveForm.name,
-      email: testDriveForm.email,
-      phone: testDriveForm.phone,
-      customField: {
-        preferredDate: testDriveForm.preferredDate,
-        preferredTime: testDriveForm.preferredTime,
-        message: testDriveForm.message,
-        carExchange: testDriveForm.carExchange
-      },
-      tags: ["Test Drive Request"],
-    });
-
-    // 2️⃣ Then create the opportunity
-    await createOpportunity({
-      title: "Test Drive Opportunity",
-      status: "open",
-      stageId: "dd4156de-4708-4fdc-b63d-856a8ee7d4ed", // ✅ Your stage ID
-      email: testDriveForm.email,
-      phone: testDriveForm.phone,
-      monetaryValue: 0,
-      source: "website",
-      name: testDriveForm.name,
-      companyName: "Interested in Test Drive"
-    });
-
-    toast({
-      title: "Test Drive Scheduled!",
-      description: "Opportunity created in CRM."
-    });
-  } catch (error) {
-    console.error("GHL Opportunity Error:", error);
-    toast({
-      title: "Submission Failed",
-      description: "Failed to create opportunity in CRM.",
-      variant: "destructive"
-    });
-  }
-
-  setTestDriveForm({ name: '', email: '', phone: '', preferredDate: '', preferredTime: '', message: '', carExchange: false });
-  setShowTestDriveForm(false);
-};
-
-
-
   const copyIframeCode = () => {
     navigator.clipboard.writeText(iframeCode);
     setCopied(true);
@@ -756,144 +563,6 @@ const handleTestDriveSubmit = async () => {
           }
         />
       </div>
-
-      {/* Contact Us Dialog */}
-      {/*    */}
-      <Dialog open={showContactForm} onOpenChange={setShowContactForm}>
-        <DialogContent>
-          <DialogTitle>Contact Us</DialogTitle>
-          <form
-            onSubmit={e => {
-              e.preventDefault();
-              handleContactSubmit();
-            }}
-            className="space-y-4"
-          >
-            <Input
-              placeholder="Name"
-              value={contactForm.name}
-              onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Email"
-              value={contactForm.email}
-              onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Phone"
-              value={contactForm.phone}
-              onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
-              required
-            />
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="carExchange"
-                checked={contactForm.carExchange}
-                onChange={e => setContactForm({ ...contactForm, carExchange: e.target.checked })}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="carExchange" className="text-sm font-medium text-gray-700">
-                Are you looking to exchange your car?
-              </label>
-            </div>
-            <Textarea
-              placeholder="Message"
-              value={contactForm.message}
-              onChange={e => setContactForm({ ...contactForm, message: e.target.value })}
-            />
-            <Button type="submit" className="w-full">Send</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Book a Test Drive Dialog */}
-      {/* TODO :- Add A field which is already Filled With currunt Detiails and can be editade   */}
-      <Dialog open={showTestDriveForm} onOpenChange={setShowTestDriveForm}>
-        <DialogContent>
-          <DialogTitle>Book a Test Drive</DialogTitle>
-          <form
-            onSubmit={e => {
-              e.preventDefault();
-              handleTestDriveSubmit();
-            }}
-            className="space-y-4"
-          >
-            <Input
-              placeholder="Name"
-              value={testDriveForm.name}
-              onChange={e => setTestDriveForm({ ...testDriveForm, name: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Email"
-              value={testDriveForm.email}
-              onChange={e => setTestDriveForm({ ...testDriveForm, email: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Phone"
-              value={testDriveForm.phone}
-              onChange={e => setTestDriveForm({ ...testDriveForm, phone: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Preferred Date"
-              type="date"
-              value={testDriveForm.preferredDate}
-              onChange={e => setTestDriveForm({ ...testDriveForm, preferredDate: e.target.value })}
-              required
-            />
-            <Input
-              placeholder="Preferred Time"
-              type="time"
-              value={testDriveForm.preferredTime}
-              onChange={e => setTestDriveForm({ ...testDriveForm, preferredTime: e.target.value })}
-            />
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="testDriveCarExchange"
-                checked={testDriveForm.carExchange}
-                onChange={e => setTestDriveForm({ ...testDriveForm, carExchange: e.target.checked })}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="testDriveCarExchange" className="text-sm font-medium text-gray-700">
-                Are you looking to exchange your car?
-              </label>
-            </div>
-            <Textarea
-              placeholder="Message"
-              value={testDriveForm.message}
-              onChange={e => setTestDriveForm({ ...testDriveForm, message: e.target.value })}
-            />
-            <Button type="submit" className="w-full">Book Test Drive</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-      <VehicleAddDialog
-        isOpen={isEditCarOpen}
-        onClose={() => setIsEditCarOpen(false)}
-        onSave={async (vehicleData) => {
-          // If editCar is set, update the car
-          if (editCar && editCar._id) {
-            try {
-              const updatedCar = await updateVehicleToBackend(editCar._id, vehicleData);
-              setCars(prev => prev.map(car => (car._id === updatedCar._id ? updatedCar : car)));
-              setFilteredCars(prev => prev.map(car => (car._id === updatedCar._id ? updatedCar : car)));
-              setIsEditCarOpen(false);
-              setEditCar(null);
-              toast({ title: 'Car updated', description: 'Vehicle details updated successfully.' });
-            } catch (err) {
-              toast({ title: 'Error', description: 'Failed to update car.', variant: 'destructive' });
-            }
-          }
-        }}
-        editCar={editCar}
-        mode={editCar ? 'edit' : 'add'}
-      />
 
       {/* Requirement Dialog */}
       <Dialog open={showRequirementDialog} onOpenChange={setShowRequirementDialog}>

@@ -15,10 +15,16 @@ app.use(express.json());
 app.use('/api', carRoutes); // All other car routes
 const contactRoutes = require('./routes/contactRoutes');
 app.use('/api/contacts', contactRoutes);
+const testDriveRoutes = require('./routes/testDriveRoutes');
+app.use('/api/test-drives', testDriveRoutes);
 const requirementRoutes = require('./routes/requirementRoutes');
 require('./models/requirement');
 app.use('/api/requirements', requirementRoutes);
-
+const statsRoutes = require('./routes/statsRoutes');
+app.use('/api/stats', statsRoutes);
+// const carAdminRoutes = require('./routes/carAdminRoutes');
+// app.use('/api/admin', carAdminRoutes);
+app.use('/api/admin', require('./routes/carAdminRoutes'))
 // Inspection Report Routes
 const inspectionReportRoutes = require('./routes/inspectionReportRoutes');
 app.use('/api/inspection-reports', inspectionReportRoutes);

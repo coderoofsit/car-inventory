@@ -8,6 +8,17 @@ interface CarCardProps {
   onClick?: () => void;
 }
 
+const statusColors: Record<string, string> = {
+  Available: 'text-green-600',
+  Sold: 'text-gray-400',
+  Reserved: 'text-yellow-500',
+  Pending: 'text-blue-500',
+  sold: 'text-gray-400', // handle lowercase for backend
+  available: 'text-green-600',
+  reserved: 'text-yellow-500',
+  pending: 'text-blue-500',
+};
+
 const CarCard: React.FC<CarCardProps> = ({ car }) => {
   const placeholder = 'https://via.placeholder.com/400x300?text=No+Image';
   const [mediaIndex, setMediaIndex] = React.useState(0);
@@ -16,10 +27,6 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
   const currentMedia = mediaArr[mediaIndex] || '';
   const handlePrev = (e: React.MouseEvent) => { e.stopPropagation(); setMediaIndex((prev) => (prev === 0 ? mediaArr.length - 1 : prev - 1)); };
   const handleNext = (e: React.MouseEvent) => { e.stopPropagation(); setMediaIndex((prev) => (prev === mediaArr.length - 1 ? 0 : prev + 1)); };
-  const isAvailable = (car.availability || car.status || '').toLowerCase() === 'available';
-  const isSold = (car.availability || car.status || '').toLowerCase() === 'sold';
-  const statusColor = isAvailable ? 'text-green-600' : isSold ? 'text-gray-400' : 'text-yellow-500';
-  const statusText = isAvailable ? 'Available' : isSold ? 'Sold' : (car.availability || car.status || 'Unknown');
   const year = car.manufactureYear || car.year || '-';
   const brand = car.brand || car.make || '';
   const model = car.model || '';
@@ -37,6 +44,11 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
       navigate(`/car/${car._id}`);
     }
   };
+
+  // Use only car.status for status
+  const statusRaw = car.status || 'Unknown';
+  const status = statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1).toLowerCase();
+  const statusColor = statusColors[status] || statusColors[status.toLowerCase()] || 'text-gray-500';
 
   return (
     <div
@@ -93,7 +105,7 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
         </div>
         <div className="text-xs text-gray-500 mb-1 truncate">{vin}</div>
         <div className="flex items-center text-sm mb-1">
-          <span className={`font-medium ${statusColor}`}>{statusText}</span>
+          <span className={`font-medium ${statusColor}`}>{status}</span>
         </div>
         <div className="text-gray-700 text-sm mb-1">
           {mileage ? `${formatNumber(mileage)} KM` : ''}

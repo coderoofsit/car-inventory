@@ -1,9 +1,11 @@
 const mongoose = require('mongoose');
 
-const contactSchema = new mongoose.Schema({
+const testDriveSchema = new mongoose.Schema({
   name: String,
   email: String,
   phone: String,
+  preferredDate: String,
+  preferredTime: String,
   message: String,
   customField: {
     carexchange: { type: String, enum: ['Yes', 'No'], default: 'No' },
@@ -11,6 +13,6 @@ const contactSchema = new mongoose.Schema({
     model: { type: String },
     year: { type: String }
   }
-});
+}, { timestamps: true });
 
-module.exports = mongoose.model('Contact', contactSchema); 
+module.exports = mongoose.model('TestDrive', testDriveSchema); 

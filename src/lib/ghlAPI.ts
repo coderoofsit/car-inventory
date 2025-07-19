@@ -15,8 +15,15 @@ const api = axios.create({
 
 // ✅ Create Contact API
 export const createContact = async (contactData: unknown) => {
-  const response = await api.post('/contacts/', contactData);
-  return response.data;
+  console.log('[GHL] About to POST to /contacts/ with:', contactData);
+  try {
+    const response = await api.post('/contacts/', contactData);
+    console.log('[GHL] Response from /contacts/:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('[GHL] Error posting to /contacts/:', error);
+    throw error;
+  }
 };
 
 // ✅ Create Opportunity API
@@ -25,4 +32,18 @@ export const createOpportunity = async (opportunityData) => {
   const url = `/pipelines/${pipelineId}/opportunities/`;
   const response = await api.post(url, opportunityData);
   return response.data;
+};
+
+export const debugStageIds = async () => {
+  try {
+    const response = await api.get(`/pipelines/fZddfNFf75RykTgQfAtx/`);
+    console.log('🔍 DEBUG: Available Stage IDs:');
+    response.data.stages?.forEach((stage, index) => {
+      console.log(`${index + 1}. "${stage.name}" → ID: "${stage.id}"`);
+    });
+    return response.data.stages;
+  } catch (error) {
+    console.error('❌ Error fetching stages:', error);
+    return [];
+  }
 };

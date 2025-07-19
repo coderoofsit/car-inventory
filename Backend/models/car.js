@@ -15,11 +15,7 @@ const carSchema = new mongoose.Schema({
   condition: String,
   description: String,
   vin: String,
-  availability: {
-    type: String,
-    enum: ['Available', 'Sold', 'Reserved'],
-    default: 'Available'
-  },
+
   // Additional fields from frontend
   trim: String,
   bodyStyle: String,
