@@ -35,10 +35,7 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
     email: '',
     phone: '',
     message: '',
-    make: '',
-    model: '',
-    year: '',
-    price: ''
+    carExchange: false
   });
   const [testDriveForm, setTestDriveForm] = useState({
     name: '',
@@ -46,7 +43,8 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
     phone: '',
     preferredDate: '',
     preferredTime: '',
-    message: ''
+    message: '',
+    carExchange: false
   });
   const [showEditDialog, setShowEditDialog] = useState(false);
 
@@ -129,16 +127,48 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
   const handleNextMedia = () => setMediaIndex((prev) => (prev === media.length - 1 ? 0 : prev + 1));
   const handleSelectMedia = (idx: number) => setMediaIndex(idx);
 
-  // Contact Us and Test Drive submit handlers (dummy, replace with real logic as needed)
-  const handleContactSubmit = (e: React.FormEvent) => {
+  // Contact Us and Test Drive submit handlers
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement contact form submission logic
-    setShowContactForm(false);
+    
+    if (!contactForm.name || !contactForm.email || !contactForm.phone) {
+      // You can add toast notification here if needed
+      return;
+    }
+
+    try {
+      // Send to backend
+      await fetch('http://localhost:5000/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contactForm),
+      });
+      
+      // Reset form and close dialog
+      setContactForm({ name: '', email: '', phone: '', message: '', carExchange: false });
+      setShowContactForm(false);
+    } catch (err) {
+      console.error('Error submitting contact form:', err);
+    }
   };
-  const handleTestDriveSubmit = (e: React.FormEvent) => {
+  const handleTestDriveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement test drive form submission logic
-    setShowTestDriveForm(false);
+    
+    if (!testDriveForm.name || !testDriveForm.email || !testDriveForm.phone || !testDriveForm.preferredDate) {
+      // You can add toast notification here if needed
+      return;
+    }
+
+    try {
+      // Send to backend (you can create a test drive endpoint if needed)
+      // For now, we'll just reset the form
+      
+      // Reset form and close dialog
+      setTestDriveForm({ name: '', email: '', phone: '', preferredDate: '', preferredTime: '', message: '', carExchange: false });
+      setShowTestDriveForm(false);
+    } catch (err) {
+      console.error('Error submitting test drive form:', err);
+    }
   };
 
   // Add a handler to update car after edit
@@ -298,11 +328,7 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
                     className="flex-1 transition-colors duration-150 border-blue-600 hover:bg-blue-50 hover:text-blue-700 active:bg-blue-100 active:text-blue-900 focus:ring-2 focus:ring-blue-300"
                     onClick={() => {
                       setContactForm(form => ({
-                        ...form,
-                        make: car.brand || '',
-                        model: car.model || '',
-                        year: car.manufactureYear?.toString() || '',
-                        price: car.sellingPrice?.toString() || ''
+                        ...form
                       }));
                       setShowContactForm(true);
                     }}
@@ -434,26 +460,18 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
               onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
               required
             />
-            <Input
-              placeholder="Make"
-              value={contactForm.make}
-              onChange={e => setContactForm({ ...contactForm, make: e.target.value })}
-            />
-            <Input
-              placeholder="Model"
-              value={contactForm.model}
-              onChange={e => setContactForm({ ...contactForm, model: e.target.value })}
-            />
-            <Input
-              placeholder="Year"
-              value={contactForm.year}
-              onChange={e => setContactForm({ ...contactForm, year: e.target.value })}
-            />
-            <Input
-              placeholder="Price"
-              value={contactForm.price}
-              onChange={e => setContactForm({ ...contactForm, price: e.target.value })}
-            />
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="carExchange"
+                checked={contactForm.carExchange}
+                onChange={e => setContactForm({ ...contactForm, carExchange: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="carExchange" className="text-sm font-medium text-gray-700">
+                Are you looking to exchange your car?
+              </label>
+            </div>
             <Textarea
               placeholder="Message"
               value={contactForm.message}
@@ -503,6 +521,18 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
               value={testDriveForm.preferredTime}
               onChange={e => setTestDriveForm({ ...testDriveForm, preferredTime: e.target.value })}
             />
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="testDriveCarExchange"
+                checked={testDriveForm.carExchange}
+                onChange={e => setTestDriveForm({ ...testDriveForm, carExchange: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="testDriveCarExchange" className="text-sm font-medium text-gray-700">
+                Are you looking to exchange your car?
+              </label>
+            </div>
             <Textarea
               placeholder="Message"
               value={testDriveForm.message}

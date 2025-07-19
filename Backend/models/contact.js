@@ -6,10 +6,7 @@ const contactSchema = new mongoose.Schema({
   phone: String,
   message: String,
   customField: {
-    make: { type: String },
-    model: { type: String },
-    year: { type: String },
-    price: { type: String }
+    carExchange: { type: Boolean, default: false }
   }
 });
 

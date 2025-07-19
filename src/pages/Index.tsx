@@ -122,10 +122,7 @@ frameborder="0">
     email: '',
     phone: '',
     message: '',
-    make: '',
-    model: '',
-    year: '',
-    price: ''
+    carExchange: false
   });
   const [testDriveForm, setTestDriveForm] = useState({
     name: '',
@@ -133,7 +130,8 @@ frameborder="0">
     phone: '',
     preferredDate: '',
     preferredTime: '',
-    message: ''
+    message: '',
+    carExchange: false
   });
   const [showContactForm, setShowContactForm] = useState(false);
   const [showTestDriveForm, setShowTestDriveForm] = useState(false);
@@ -476,10 +474,7 @@ const handleContactSubmit = async () => {
       phone: contactForm.phone,
       customField: {
         message: contactForm.message,
-        make: contactForm.make,
-        model: contactForm.model,
-        year: contactForm.year,
-        price: contactForm.price
+        carExchange: contactForm.carExchange
       },
       tags: ["Website Contact"]
     };
@@ -499,7 +494,7 @@ const handleContactSubmit = async () => {
     });
   }
 
-  setContactForm({ name: '', email: '', phone: '', message: '', make: '', model: '', year: '', price: '' });
+  setContactForm({ name: '', email: '', phone: '', message: '', carExchange: false });
   setShowContactForm(false);
 };
 const handleTestDriveSubmit = async () => {
@@ -523,6 +518,7 @@ const handleTestDriveSubmit = async () => {
         preferredDate: testDriveForm.preferredDate,
         preferredTime: testDriveForm.preferredTime,
         message: testDriveForm.message,
+        carExchange: testDriveForm.carExchange
       },
       tags: ["Test Drive Request"],
     });
@@ -553,7 +549,7 @@ const handleTestDriveSubmit = async () => {
     });
   }
 
-  setTestDriveForm({ name: '', email: '', phone: '', preferredDate: '', preferredTime: '', message: '' });
+  setTestDriveForm({ name: '', email: '', phone: '', preferredDate: '', preferredTime: '', message: '', carExchange: false });
   setShowTestDriveForm(false);
 };
 
@@ -791,26 +787,18 @@ const handleTestDriveSubmit = async () => {
               onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
               required
             />
-            <Input
-              placeholder="Make"
-              value={contactForm.make}
-              onChange={e => setContactForm({ ...contactForm, make: e.target.value })}
-            />
-            <Input
-              placeholder="Model"
-              value={contactForm.model}
-              onChange={e => setContactForm({ ...contactForm, model: e.target.value })}
-            />
-            <Input
-              placeholder="Year"
-              value={contactForm.year}
-              onChange={e => setContactForm({ ...contactForm, year: e.target.value })}
-            />
-            <Input
-              placeholder="Price"
-              value={contactForm.price}
-              onChange={e => setContactForm({ ...contactForm, price: e.target.value })}
-            />
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="carExchange"
+                checked={contactForm.carExchange}
+                onChange={e => setContactForm({ ...contactForm, carExchange: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="carExchange" className="text-sm font-medium text-gray-700">
+                Are you looking to exchange your car?
+              </label>
+            </div>
             <Textarea
               placeholder="Message"
               value={contactForm.message}
@@ -864,6 +852,18 @@ const handleTestDriveSubmit = async () => {
               value={testDriveForm.preferredTime}
               onChange={e => setTestDriveForm({ ...testDriveForm, preferredTime: e.target.value })}
             />
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="testDriveCarExchange"
+                checked={testDriveForm.carExchange}
+                onChange={e => setTestDriveForm({ ...testDriveForm, carExchange: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="testDriveCarExchange" className="text-sm font-medium text-gray-700">
+                Are you looking to exchange your car?
+              </label>
+            </div>
             <Textarea
               placeholder="Message"
               value={testDriveForm.message}
