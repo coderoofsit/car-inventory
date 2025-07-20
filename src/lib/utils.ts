@@ -16,6 +16,7 @@ export interface Car {
   mileage: number;
   kmRun?: number;
   location: string;
+  location_id: string;
   fuel: string;
   transmission: string;
   media: string[];

@@ -12,13 +12,19 @@ export async function saveVehicleToBackend(vehicleData: any): Promise<any> {
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
   const saveUrl = `${backendUrl}/api/cars`;
 
+  // Always include location_id
+  const payload = {
+    ...vehicleData,
+    location_id: vehicleData.location_id || import.meta.env.VITE_LOCATION_ID,
+  };
+
   try {
     const response = await fetch(saveUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(vehicleData),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -47,13 +53,19 @@ export async function updateVehicleToBackend(id: string, vehicleData: any): Prom
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
   const updateUrl = `${backendUrl}/api/cars/${id}`;
 
+  // Always include location_id
+  const payload = {
+    ...vehicleData,
+    location_id: vehicleData.location_id || import.meta.env.VITE_LOCATION_ID,
+  };
+
   try {
     const response = await fetch(updateUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(vehicleData),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

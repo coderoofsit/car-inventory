@@ -15,6 +15,7 @@ const carSchema = new mongoose.Schema({
   condition: String,
   description: String,
   vin: String,
+  location_id: { type: String, required: true },
 
   // Additional fields from frontend
   trim: String,

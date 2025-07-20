@@ -1,5 +1,6 @@
 import { toast } from "@/hooks/use-toast";
 import { createContact, createOpportunity, debugStageIds } from "@/lib/ghlAPI";
+import { pipeline } from "stream";
 
 export const handleContactSubmit = async (formData: any, car?: any) => {
   console.log('[ContactUs] handleContactSubmit called', formData, car);
@@ -28,6 +29,7 @@ export const handleContactSubmit = async (formData: any, car?: any) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      
     });
     const result = await res.json();
     console.log('[ContactUs] Backend response:', result);
@@ -82,7 +84,7 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
   }
 
   const carExchangeValue = formData.customField.carExchange ? 'Yes' : 'No';
-  
+
   const payload = {
     ...formData,
     customField: {
@@ -106,38 +108,74 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
     const result = await res.json();
     console.log('[TestDrive] Backend response:', result);
 
-    // CRM Opportunity integration - v1 API Format (CORRECTED)
-    const opportunityPayload = {
-      title: `Test Drive Request - ${payload.name}`,
-      stageId: "dd4156de-4708-4fdc-b63d-856a8ee7d4ed", 
-      status: "open",
-      email: payload.email,                              
-      phone: payload.phone,                              
-      name: payload.name,                               
-      tags: ["Website Test Drive"]
-    };
-
-    console.log('[TestDrive] About to send to CRM Opportunity:', opportunityPayload);
-
+    // Step 1: Create Contact in CRM
+    toast({ title: "CRM", description: "Creating contact in CRM..." });
+    let contactId = null;
     try {
-      const crmOppResult = await createOpportunity(opportunityPayload);
-      console.log('[TestDrive] CRM Opportunity response:', crmOppResult);
-      toast({ 
-        title: "CRM Opportunity Success", 
-        description: "Test drive opportunity sent to CRM successfully." 
-      });
-    } catch (crmOppError) {
-      console.error('[TestDrive] CRM Opportunity Error:', crmOppError);
-      toast({ 
-        title: "CRM Opportunity Failed", 
-        description: "Failed to send test drive opportunity to CRM.", 
-        variant: "destructive" 
-      });
+      const crmContactPayload = {
+        locationId: import.meta.env.VITE_GHL_LOCATION_ID,
+        firstName: payload.name,
+        email: payload.email,
+        phone: payload.phone,
+        customField: payload.customField,
+        tags: ["Website Test Drive"]
+        
+      };
+      const crmContactResult = await createContact(crmContactPayload);
+      contactId = crmContactResult.contact?.id || crmContactResult.id;
+      if (!contactId) throw new Error('No contactId returned from CRM');
+      toast({ title: "CRM Success", description: "Contact created in CRM." });
+    } catch (crmError) {
+      console.error('[TestDrive] CRM Contact Error:', crmError);
+      toast({ title: "CRM Contact Failed", description: "Failed to create contact in CRM.", variant: "destructive" });
+      return false;
     }
 
-    toast({ 
-      title: "Test Drive Scheduled!", 
-      description: "We'll contact you soon to confirm your test drive." 
+    // Step 2: Create Opportunity in CRM
+    toast({ title: "CRM", description: "Creating opportunity in CRM..." });
+    console.log(payload);
+    try {
+      const opportunityPayload = {
+        name: `Test Drive Request - ${payload.name}`,
+        status: "open",
+        contactId,
+        monetaryValue: '', // Optionally fill with price or leave blank
+        // The following will be filled from .env in createOpportunity
+        customFields: [
+          {
+            id: "carexchange",
+            value: payload.customField.carexchange || ''
+          },
+          {
+            id: "make", 
+            value: payload.customField.make || ''
+          },
+          {
+            id: "model",
+            value: payload.customField.model || ''
+          },
+          {
+            id: "year",
+            value: payload.customField.year || ''
+          },
+          {
+            id: "message",
+            value: payload.customField.message || ''
+          }
+        ]
+      };
+      const crmOppResult = await createOpportunity(opportunityPayload);
+      console.log('[TestDrive] CRM Opportunity response:', crmOppResult);
+      toast({ title: "CRM Opportunity Success", description: "Test drive opportunity sent to CRM successfully." });
+    } catch (crmOppError) {
+      console.error('[TestDrive] CRM Opportunity Error:', crmOppError);
+      toast({ title: "CRM Opportunity Failed", description: "Failed to send test drive opportunity to CRM.", variant: "destructive" });
+      return false;
+    }
+
+    toast({
+      title: "Test Drive Scheduled!",
+      description: "We'll contact you soon to confirm your test drive."
     });
     return true;
 

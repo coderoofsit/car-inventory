@@ -331,7 +331,8 @@ const handleAddCar = async () => {
     description: newCar.description || "No description provided.",
     media: newCar.media && newCar.media.length > 0 ? newCar.media : ["https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"],
     vin: newCar.vin || `VIN${Date.now()}`,
-    availability: 'Available'
+    status: 'Available',
+    location_id: import.meta.env.VITE_LOCATION_ID,
   };
 
   try {

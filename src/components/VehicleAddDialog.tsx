@@ -277,6 +277,7 @@ const handleDialogClose = () => {
         : [],
       inspectionReport,
       media: uploadedMedia,
+      location_id: import.meta.env.VITE_LOCATION_ID,
     };
     try {
       await onSave(payload);

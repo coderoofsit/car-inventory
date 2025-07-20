@@ -201,6 +201,9 @@ router.post('/cars', async (req, res) => {
   console.log('[carRoutes] POST / - Add new car');
   try {
     const { inspectionReport, ...carData } = req.body;
+    if (!carData.location_id) {
+      return res.status(400).json({ error: 'location_id is required' });
+    }
     const car = new Car(carData);
     const savedCar = await car.save();
     if (inspectionReport) {
@@ -223,6 +226,9 @@ router.post('/cars', async (req, res) => {
 router.put('/cars/:id', async (req, res) => {
   try {
     const { inspectionReport, ...carData } = req.body;
+    if (!carData.location_id) {
+      return res.status(400).json({ error: 'location_id is required' });
+    }
     const carId = req.params.id;
     const updatedCar = await Car.findByIdAndUpdate(carId, carData, { new: true });
     let updatedInspection = null;
