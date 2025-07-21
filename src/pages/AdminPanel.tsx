@@ -24,7 +24,7 @@ const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     // Fetch initial car list
-    fetch('http://localhost:5000/api/cars/filter?limit=10')
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/cars/filter?limit=10`)
       .then(res => res.json())
       .then(data => {
         if (data.success && Array.isArray(data.cars)) {
