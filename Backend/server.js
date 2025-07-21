@@ -19,6 +19,7 @@ const testDriveRoutes = require('./routes/testDriveRoutes');
 app.use('/api/test-drives', testDriveRoutes);
 const requirementRoutes = require('./routes/requirementRoutes');
 require('./models/requirement');
+app.use(cors());
 app.use('/api/requirements', requirementRoutes);
 const statsRoutes = require('./routes/statsRoutes');
 app.use('/api/stats', statsRoutes);
