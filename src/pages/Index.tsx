@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Search, Plus, Filter, Heart, Eye, Code, Globe, Copy, CheckCircle, Upload, X, Phone, Calendar, Menu } from 'lucide-react';
+import { Search, Plus, Filter, Heart, Eye, Code, Globe, Copy, CheckCircle, Upload, X, Phone, Calendar, Menu, Loader2 } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import VehicleAddDialog from "@/components/VehicleAddDialog";
 import CarList from "@/components/CarList";
@@ -26,6 +26,26 @@ import TestDriveDialog from "@/components/TestDriveDialog";
 const isEmbedded = window.self !== window.top;
 
 const sampleCars: Car[] = [];
+
+// Loading Skeleton Components
+const CarCardSkeleton = () => (
+  <div className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
+    <div className="h-48 bg-gray-300"></div>
+    <div className="p-4 space-y-3">
+      <div className="h-6 bg-gray-300 rounded w-3/4"></div>
+      <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+      <div className="flex justify-between">
+        <div className="h-4 bg-gray-300 rounded w-1/4"></div>
+        <div className="h-4 bg-gray-300 rounded w-1/4"></div>
+      </div>
+      <div className="h-8 bg-gray-300 rounded w-full"></div>
+    </div>
+  </div>
+);
+
+const LoadingSpinner = ({ size = 4 }: { size?: number }) => (
+  <Loader2 className={`h-${size} w-${size} animate-spin`} />
+);
 
 // Debounce utility
 function useDebouncedEffect(effect: () => void, deps: React.DependencyList, delay: number) {
@@ -49,6 +69,15 @@ const [newCar, setNewCar] = useState({
   fuel: '', transmission: '', condition: '', description: '', media: [] as string[], vin: ''
 });
 const [filterMeta, setFilterMeta] = useState<any>(null);
+
+// Loading States
+const [isInitialLoad, setIsInitialLoad] = useState(true);
+const [isFilterLoading, setIsFilterLoading] = useState(false);
+const [isSearchLoading, setIsSearchLoading] = useState(false);
+const [isClearingFilters, setIsClearingFilters] = useState(false);
+const [isAddingCar, setIsAddingCar] = useState(false);
+const [isSubmittingRequirement, setIsSubmittingRequirement] = useState(false);
+
 const getDefaultFilterState = (meta: any) => ({
   brands: [],
   models: [],
@@ -60,6 +89,7 @@ const getDefaultFilterState = (meta: any) => ({
   priceRange: { min: meta?.minPrice ?? 0, max: meta?.maxPrice ?? 1000000 },
   kmRunRange: { min: meta?.minKmRun ?? 0, max: meta?.maxKmRun ?? 200000 }
 });
+
 const [filters, setFilters] = useState<VehicleFilters>(getDefaultFilterState({}));
 const [pendingFilters, setPendingFilters] = useState<VehicleFilters>(getDefaultFilterState({}));
 const [searchTerm, setSearchTerm] = useState('');
@@ -78,7 +108,6 @@ const [copied, setCopied] = useState(false);
 const [isEditCarOpen, setIsEditCarOpen] = useState(false);
 const [editCar, setEditCar] = useState(null);
 const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-const [isInitialLoad, setIsInitialLoad] = useState(true);
 
 // Helper function to check if filters have actual values (not default empty state)
 const hasActiveFilters = (filterState: VehicleFilters, meta: any) => {
@@ -99,6 +128,7 @@ const hasActiveFilters = (filterState: VehicleFilters, meta: any) => {
 // Initial load: Fetch filter metadata and all cars
 React.useEffect(() => {
   const loadMetaAndCars = async () => {
+    setIsInitialLoad(true);
     try {
       const [meta, carsData] = await Promise.all([
         fetchFilterMetadataFromBackend(),
@@ -111,7 +141,6 @@ React.useEffect(() => {
       setPendingFilters(defaultState);
       setCars(carsData);
       setFilteredCars(carsData);
-      setIsInitialLoad(false);
     } catch (err) {
       console.error('Failed to fetch filter metadata or cars:', err);
       toast({
@@ -119,6 +148,7 @@ React.useEffect(() => {
         description: "Failed to load filter metadata or vehicles from database. Please refresh the page.",
         variant: "destructive"
       });
+    } finally {
       setIsInitialLoad(false);
     }
   };
@@ -131,6 +161,7 @@ React.useEffect(() => {
   if (isInitialLoad || !filterMeta) return;
 
   const applyFilters = async () => {
+    setIsFilterLoading(true);
     const params: Record<string, any> = {};
     
     // Add search term if present
@@ -173,6 +204,8 @@ React.useEffect(() => {
         description: "Failed to fetch filtered vehicles from database.",
         variant: "destructive"
       });
+    } finally {
+      setIsFilterLoading(false);
     }
   };
 
@@ -183,43 +216,49 @@ React.useEffect(() => {
 useDebouncedEffect(() => {
   if (isInitialLoad || !filterMeta) return;
 
-  const params: Record<string, any> = {};
-  if (searchTerm.trim()) {
-    params.search = searchTerm.trim();
-  }
-  
-  // Include current active filters
-  if (hasActiveFilters(filters, filterMeta)) {
-    if (filters.brands && filters.brands.length > 0) params.brand = filters.brands;
-    if (filters.models && filters.models.length > 0) params.model = filters.models;
-    if (filters.bodyStyles && filters.bodyStyles.length > 0) params.bodyStyle = filters.bodyStyles;
-    if (filters.fuelTypes && filters.fuelTypes.length > 0) params.fuel = filters.fuelTypes;
-    if (filters.transmission) params.transmission = filters.transmission;
-    if (filters.ownership) params.ownership = filters.ownership;
+  const performSearch = async () => {
+    setIsSearchLoading(true);
+    const params: Record<string, any> = {};
+    if (searchTerm.trim()) {
+      params.search = searchTerm.trim();
+    }
     
-    const defaultState = getDefaultFilterState(filterMeta);
-    if (filters.yearRange && (filters.yearRange.min !== defaultState.yearRange.min || filters.yearRange.max !== defaultState.yearRange.max)) {
-      params.minYear = filters.yearRange.min;
-      params.maxYear = filters.yearRange.max;
+    // Include current active filters
+    if (hasActiveFilters(filters, filterMeta)) {
+      if (filters.brands && filters.brands.length > 0) params.brand = filters.brands;
+      if (filters.models && filters.models.length > 0) params.model = filters.models;
+      if (filters.bodyStyles && filters.bodyStyles.length > 0) params.bodyStyle = filters.bodyStyles;
+      if (filters.fuelTypes && filters.fuelTypes.length > 0) params.fuel = filters.fuelTypes;
+      if (filters.transmission) params.transmission = filters.transmission;
+      if (filters.ownership) params.ownership = filters.ownership;
+      
+      const defaultState = getDefaultFilterState(filterMeta);
+      if (filters.yearRange && (filters.yearRange.min !== defaultState.yearRange.min || filters.yearRange.max !== defaultState.yearRange.max)) {
+        params.minYear = filters.yearRange.min;
+        params.maxYear = filters.yearRange.max;
+      }
+      if (filters.priceRange && (filters.priceRange.min !== defaultState.priceRange.min || filters.priceRange.max !== defaultState.priceRange.max)) {
+        params.minPrice = filters.priceRange.min;
+        params.maxPrice = filters.priceRange.max;
+      }
+      if (filters.kmRunRange && (filters.kmRunRange.min !== defaultState.kmRunRange.min || filters.kmRunRange.max !== defaultState.kmRunRange.max)) {
+        params.minKmRun = filters.kmRunRange.min;
+        params.maxKmRun = filters.kmRunRange.max;
+      }
     }
-    if (filters.priceRange && (filters.priceRange.min !== defaultState.priceRange.min || filters.priceRange.max !== defaultState.priceRange.max)) {
-      params.minPrice = filters.priceRange.min;
-      params.maxPrice = filters.priceRange.max;
-    }
-    if (filters.kmRunRange && (filters.kmRunRange.min !== defaultState.kmRunRange.min || filters.kmRunRange.max !== defaultState.kmRunRange.max)) {
-      params.minKmRun = filters.kmRunRange.min;
-      params.maxKmRun = filters.kmRunRange.max;
-    }
-  }
 
-  fetchVehiclesFromBackend(Object.keys(params).length > 0 ? params : undefined)
-    .then(carsData => {
+    try {
+      const carsData = await fetchVehiclesFromBackend(Object.keys(params).length > 0 ? params : undefined);
       setCars(carsData);
       setFilteredCars(carsData);
-    })
-    .catch(err => {
+    } catch (err) {
       console.error('Error fetching cars for search:', err);
-    });
+    } finally {
+      setIsSearchLoading(false);
+    }
+  };
+
+  performSearch();
 }, [searchTerm], 400);
 
 // Handler for Apply Filters
@@ -232,6 +271,7 @@ const handleApplyFilters = async () => {
 const handleClearFilters = async () => {
   if (!filterMeta) return;
   
+  setIsClearingFilters(true);
   const newDefault = getDefaultFilterState(filterMeta);
   setPendingFilters(newDefault);
   setFilters(newDefault);
@@ -247,6 +287,8 @@ const handleClearFilters = async () => {
       description: "Failed to fetch all vehicles from database.",
       variant: "destructive"
     });
+  } finally {
+    setIsClearingFilters(false);
   }
 };
 
@@ -300,6 +342,7 @@ const handleAddCar = async () => {
     return;
   }
 
+  setIsAddingCar(true);
   const carToAdd = {
     make: newCar.make,
     model: newCar.model,
@@ -340,6 +383,8 @@ const handleAddCar = async () => {
       description: "Could not save vehicle to backend.",
       variant: "destructive"
     });
+  } finally {
+    setIsAddingCar(false);
   }
 };
 
@@ -369,6 +414,7 @@ const [requirementSubmitted, setRequirementSubmitted] = useState(false);
 return (
   <div className="min-h-screen bg-gray-50">
     {/* Header */}
+    {!isEmbedded && (
     <header className="bg-white border-b border-gray-200">
       <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between">
@@ -376,7 +422,7 @@ return (
             <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Car Inventory</h1>
           </div>
           
-          {!isEmbedded && (
+         
             <>
               {/* Desktop Actions */}
               <div className="hidden md:flex items-center space-x-3">
@@ -494,6 +540,7 @@ return (
                 isOpen={isAddCarOpen}
                 onClose={() => setIsAddCarOpen(false)}
                 onSave={async (vehicleData) => {
+                  setIsAddingCar(true);
                   try {
                     toast({
                       title: "Saving Vehicle...",
@@ -519,21 +566,24 @@ return (
                       description: "Could not save vehicle to backend.",
                       variant: "destructive"
                     });
+                  } finally {
+                    setIsAddingCar(false);
                   }
                 }}
               />
             </>
-          )}
+          
         </div>
       </div>
     </header>
-
+  )}
     {/* Search and Filter Bar */}
     <div className="bg-white border-b border-gray-200 py-3 sm:py-4">
       <div className="container mx-auto px-3 sm:px-4">
         <div className="flex flex-col space-y-3 sm:space-y-4">
           {/* Results Count - Mobile: Top, Desktop: Left */}
-          <div className="text-xs sm:text-sm text-gray-600 order-1 sm:order-1">
+          <div className="text-xs sm:text-sm text-gray-600 order-1 sm:order-1 flex items-center gap-2">
+            {isSearchLoading && <LoadingSpinner size={3} />}
             Showing {filteredCars.length} - {Math.min(6, filteredCars.length)} of {filteredCars.length} results
           </div>
           
@@ -542,11 +592,17 @@ return (
             {/* Search Input */}
             <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              {isSearchLoading && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <LoadingSpinner size={4} />
+                </div>
+              )}
               <Input
                 placeholder="Search for a car"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 text-sm sm:text-base"
+                className="pl-10 pr-10 text-sm sm:text-base"
+                disabled={isSearchLoading}
               />
             </div>
             
@@ -555,8 +611,9 @@ return (
               variant="outline" 
               className="flex items-center justify-center gap-2 text-sm sm:text-base px-4 py-2 whitespace-nowrap" 
               onClick={() => setShowFilters(v => !v)}
+              disabled={isFilterLoading}
             >
-              <Filter className="h-4 w-4" />
+              {isFilterLoading ? <LoadingSpinner size={4} /> : <Filter className="h-4 w-4" />}
               Filter
             </Button>
           </div>
@@ -579,11 +636,32 @@ return (
           />
           {/* Apply Filters Button */}
           <div className="flex justify-end gap-3 py-4">
-            <Button variant="outline" onClick={handleClearFilters}>
-              Clear Filters
+            <Button 
+              variant="outline" 
+              onClick={handleClearFilters}
+              disabled={isClearingFilters || isFilterLoading}
+            >
+              {isClearingFilters ? (
+                <>
+                  <LoadingSpinner size={4} />
+                  <span className="ml-2">Clearing...</span>
+                </>
+              ) : (
+                'Clear Filters'
+              )}
             </Button>
-            <Button onClick={handleApplyFilters}>
-              Apply Filters
+            <Button 
+              onClick={handleApplyFilters}
+              disabled={isFilterLoading || isClearingFilters}
+            >
+              {isFilterLoading ? (
+                <>
+                  <LoadingSpinner size={4} />
+                  <span className="ml-2">Applying...</span>
+                </>
+              ) : (
+                'Apply Filters'
+              )}
             </Button>
           </div>
         </div>
@@ -592,20 +670,35 @@ return (
 
     {/* Car Grid */}
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:py-8">
-      <CarList 
-        cars={filteredCars} 
-        emptyState={
-          <div className="text-center py-8 sm:py-12">
-            <div className="text-sm sm:text-base mb-4">No cars found for your filters.</div>
-            <Button 
-              className="text-sm sm:text-base px-4 sm:px-6" 
-              onClick={() => setShowRequirementDialog(true)}
-            >
-              Request a Car
-            </Button>
+      {isInitialLoad ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <CarCardSkeleton key={index} />
+          ))}
+        </div>
+      ) : isFilterLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-3">
+            <LoadingSpinner size={8} />
+            <p className="text-gray-600 text-sm">Loading filtered results...</p>
           </div>
-        }
-      />
+        </div>
+      ) : (
+        <CarList 
+          cars={filteredCars} 
+          emptyState={
+            <div className="text-center py-8 sm:py-12">
+              <div className="text-sm sm:text-base mb-4">No cars found for your filters.</div>
+              <Button 
+                className="text-sm sm:text-base px-4 sm:px-6" 
+                onClick={() => setShowRequirementDialog(true)}
+              >
+                Request a Car
+              </Button>
+            </div>
+          }
+        />
+      )}
     </div>
 
     {/* Requirement Dialog - Mobile Responsive */}
@@ -621,6 +714,7 @@ return (
             className="space-y-3 sm:space-y-4"
             onSubmit={async e => {
               e.preventDefault();
+              setIsSubmittingRequirement(true);
               const payload = {
                 filters: pendingFilters,
                 contact: requirementContact
@@ -639,6 +733,8 @@ return (
                 }, 3000);
               } catch (err) {
                 toast({ title: 'Error', description: 'Failed to register requirement', variant: 'destructive' });
+              } finally {
+                setIsSubmittingRequirement(false);
               }
             }}
           >
@@ -648,6 +744,7 @@ return (
               onChange={e => setRequirementContact({ ...requirementContact, name: e.target.value })}
               required
               className="text-sm sm:text-base"
+              disabled={isSubmittingRequirement}
             />
             <Input
               placeholder="Email"
@@ -655,6 +752,7 @@ return (
               onChange={e => setRequirementContact({ ...requirementContact, email: e.target.value })}
               required
               className="text-sm sm:text-base"
+              disabled={isSubmittingRequirement}
             />
             <Input
               placeholder="Phone"
@@ -662,9 +760,21 @@ return (
               onChange={e => setRequirementContact({ ...requirementContact, phone: e.target.value })}
               required
               className="text-sm sm:text-base"
+              disabled={isSubmittingRequirement}
             />
-            <Button type="submit" className="w-full text-sm sm:text-base">
-              Submit Requirement
+            <Button 
+              type="submit" 
+              className="w-full text-sm sm:text-base"
+              disabled={isSubmittingRequirement}
+            >
+              {isSubmittingRequirement ? (
+                <>
+                  <LoadingSpinner size={4} />
+                  <span className="ml-2">Submitting...</span>
+                </>
+              ) : (
+                'Submit Requirement'
+              )}
             </Button>
           </form>
         )}
