@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Search, Plus, Filter, Heart, Eye, Code, Globe, Copy, CheckCircle, Upload, X, Phone, Calendar } from 'lucide-react';
+import { Search, Plus, Filter, Heart, Eye, Code, Globe, Copy, CheckCircle, Upload, X, Phone, Calendar, Menu } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 import VehicleAddDialog from "@/components/VehicleAddDialog";
 import CarList from "@/components/CarList";
@@ -22,6 +22,7 @@ import { Link } from 'react-router-dom';
 import { handleContactSubmit, handleTestDriveSubmit } from "@/lib/formHandlers";
 import ContactUsDialog from "@/components/ContactUsDialog";
 import TestDriveDialog from "@/components/TestDriveDialog";
+
 const isEmbedded = window.self !== window.top;
 
 const sampleCars: Car[] = [
@@ -76,16 +77,10 @@ style="width: 100%; height: 600px; border: 1px solid #e5e7eb; border-radius: 8px
 frameborder="0">
 </iframe>`);
   const [copied, setCopied] = useState(false);
-  // Remove all state and JSX related to:
-  // - showContactForm, setShowContactForm
-  // - contactForm, setContactForm
-  // - showTestDriveForm, setShowTestDriveForm
-  // - testDriveForm, setTestDriveForm
-  // - ContactUsDialog
-  // - TestDriveDialog
-  // Add state for edit mode and car to edit
   const [isEditCarOpen, setIsEditCarOpen] = useState(false);
   const [editCar, setEditCar] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // Fetch filter metadata and all cars on mount
   React.useEffect(() => {
     const loadMetaAndCars = async () => {
@@ -116,9 +111,6 @@ frameborder="0">
     setFilters(newDefault);
     setPendingFilters(newDefault);
   }, [filterMeta]);
-
-  // Remove local filtering logic (use backend only)
-  // Remove useEffect that filters cars based on filters
 
   // Handler for Apply Filters
   const handleApplyFilters = async () => {
@@ -305,7 +297,6 @@ frameborder="0">
 
   const resetFilters = () => {
     setFilters(getDefaultFilterState(filterMeta));
-    // setSelectedMake('all'); // Remove if not needed
   };
 
 const handleAddCar = async () => {
@@ -336,7 +327,7 @@ const handleAddCar = async () => {
   };
 
   try {
-    const response = await axios.post('http://localhost:5000/api/cars', carToAdd); // 🚀 Send to backend
+    const response = await axios.post('http://localhost:5000/api/cars', carToAdd);
 
     setCars(prev => [...prev, response.data as Car]);
     setFilteredCars(prev => [...prev, response.data as Car]);
@@ -360,8 +351,6 @@ const handleAddCar = async () => {
     });
   }
 };
-
-  // ✅ REPLACED handleContactSubmit and handleTestDriveSubmit below
 
   const copyIframeCode = () => {
     navigator.clipboard.writeText(iframeCode);
@@ -390,193 +379,248 @@ const handleAddCar = async () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">Car Inventory</h1>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Car Inventory</h1>
             </div>
+            
             {!isEmbedded && (
-  <div className="flex items-center space-x-3">
-    <Dialog open={isIntegrateOpen} onOpenChange={setIsIntegrateOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center gap-2">
-          <Code className="h-4 w-4" />
-          Integrate App
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">Embed Our Car Inventory</DialogTitle>
-        </DialogHeader>
-        <div className="mt-6 space-y-6">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-2 text-blue-800">Integration Instructions</h3>
-            <p className="text-sm text-blue-700">
-              Copy the HTML code below and paste it into your website to embed our car inventory. 
-              This will display our complete car catalog on your site.
-            </p>
-          </div>
-          
-          <div className="space-y-4">
-            <div className="bg-blue-600 text-white p-4 rounded-lg">
-              <h3 className="text-lg font-semibold mb-2">HTML Embed Code</h3>
-            </div>
-            <div className="bg-gray-100 p-4 rounded-lg">
-              <code className="text-sm text-gray-800 block whitespace-pre-wrap font-mono">
-                {iframeCode}
-              </code>
-              <Button 
-                onClick={copyIframeCode}
-                className="mt-3 flex items-center gap-2"
-                variant="outline"
-              >
-                {copied ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied ? "Copied!" : "Copy Embed Code"}
-              </Button>
-            </div>
-            
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-green-800 mb-2">How to Use:</h4>
-              <ol className="text-sm text-green-700 space-y-1 list-decimal list-inside">
-                <li>Copy the HTML code above</li>
-                <li>Paste it into your website's HTML where you want the car inventory to appear</li>
-                <li>The iframe will automatically display our complete car catalog</li>
-                <li>The inventory updates in real-time as we add new cars</li>
-              </ol>
-            </div>
-            
-            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              <h4 className="font-semibold text-yellow-800 mb-2">Features Included:</h4>
-              <ul className="text-sm text-yellow-700 space-y-1 list-disc list-inside">
-                <li>Complete car inventory with search and filtering</li>
-                <li>Responsive design that works on all devices</li>
-                <li>Real-time updates when new cars are added</li>
-                <li>Professional car detail pages</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-    
-    {/* REPLACED Add Vehicle Dialog with VehicleAddDialog */}
-    <Button variant="outline" className="flex items-center gap-2" onClick={() => setIsAddCarOpen(true)}>
-      <Plus className="h-4 w-4" />
-      Add vehicle(s)
-    </Button>
-    {/* <Link to="/admin">
-      <Button className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold">
-        Admin
-      </Button>
-    </Link> */}
-    <VehicleAddDialog
-      isOpen={isAddCarOpen}
-      onClose={() => setIsAddCarOpen(false)}
-      onSave={async (vehicleData) => {
-        try {
-          toast({
-            title: "Saving Vehicle...",
-            description: "Please wait while we save the vehicle to the database.",
-          });
-          // Save to backend (now includes inspectionReport if present)
-          const savedVehicle = await saveVehicleToBackend(vehicleData);
-          // Use the response directly for dialog
-          setCars(prev => [...prev, savedVehicle as Car]);
-          setFilteredCars(prev => [...prev, savedVehicle as Car]);
-          setIsAddCarOpen(false);
-          setUploadedMedia([]);
-          setNewCar({
-            make: '', model: '', year: '', price: '', mileage: '', location: '',
-            fuel: '', transmission: '', condition: '', description: '', media: [] as string[], vin: ''
-          });
-          toast({
-            title: "Vehicle Added Successfully!",
-            description: `${savedVehicle.brand || savedVehicle.make} ${savedVehicle.model} added to your database.`
-          });
-        } catch (error) {
-          console.error("❌ Error adding car:", error);
-          toast({
-            title: "Database Error",
-            description: "Could not save vehicle to backend.",
-            variant: "destructive"
-          });
-        }
-      }}
-    />
-  </div>
+              <>
+                {/* Desktop Actions */}
+                <div className="hidden md:flex items-center space-x-3">
+                  <Dialog open={isIntegrateOpen} onOpenChange={setIsIntegrateOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-blue-600 hover:bg-blue-700 text-white px-4 lg:px-6 py-2 rounded-lg flex items-center gap-2">
+                        <Code className="h-4 w-4" />
+                        <span className="hidden lg:inline">Integrate App</span>
+                        <span className="lg:hidden">Integrate</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto mx-2">
+                      <DialogHeader>
+                        <DialogTitle className="text-xl sm:text-2xl font-bold text-center">Embed Our Car Inventory</DialogTitle>
+                      </DialogHeader>
+                      <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
+                        <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
+                          <h3 className="text-base sm:text-lg font-semibold mb-2 text-blue-800">Integration Instructions</h3>
+                          <p className="text-xs sm:text-sm text-blue-700">
+                            Copy the HTML code below and paste it into your website to embed our car inventory. 
+                            This will display our complete car catalog on your site.
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div className="bg-blue-600 text-white p-3 sm:p-4 rounded-lg">
+                            <h3 className="text-base sm:text-lg font-semibold mb-2">HTML Embed Code</h3>
+                          </div>
+                          <div className="bg-gray-100 p-3 sm:p-4 rounded-lg">
+                            <code className="text-xs sm:text-sm text-gray-800 block whitespace-pre-wrap font-mono break-all">
+                              {iframeCode}
+                            </code>
+                            <Button 
+                              onClick={copyIframeCode}
+                              className="mt-3 flex items-center gap-2 text-sm"
+                              variant="outline"
+                              size="sm"
+                            >
+                              {copied ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                              {copied ? "Copied!" : "Copy Embed Code"}
+                            </Button>
+                          </div>
+                          
+                          <div className="bg-green-50 p-3 sm:p-4 rounded-lg border border-green-200">
+                            <h4 className="font-semibold text-green-800 mb-2 text-sm sm:text-base">How to Use:</h4>
+                            <ol className="text-xs sm:text-sm text-green-700 space-y-1 list-decimal list-inside">
+                              <li>Copy the HTML code above</li>
+                              <li>Paste it into your website's HTML where you want the car inventory to appear</li>
+                              <li>The iframe will automatically display our complete car catalog</li>
+                              <li>The inventory updates in real-time as we add new cars</li>
+                            </ol>
+                          </div>
+                          
+                          <div className="bg-yellow-50 p-3 sm:p-4 rounded-lg border border-yellow-200">
+                            <h4 className="font-semibold text-yellow-800 mb-2 text-sm sm:text-base">Features Included:</h4>
+                            <ul className="text-xs sm:text-sm text-yellow-700 space-y-1 list-disc list-inside">
+                              <li>Complete car inventory with search and filtering</li>
+                              <li>Responsive design that works on all devices</li>
+                              <li>Real-time updates when new cars are added</li>
+                              <li>Professional car detail pages</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  <Button variant="outline" className="flex items-center gap-2 text-sm" onClick={() => setIsAddCarOpen(true)}>
+                    <Plus className="h-4 w-4" />
+                    <span className="hidden lg:inline">Add vehicle(s)</span>
+                    <span className="lg:hidden">Add</span>
+                  </Button>
+                </div>
+
+                {/* Mobile Menu Button */}
+                <div className="md:hidden">
+                  <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Menu className="h-4 w-4" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-[280px] sm:w-[350px]">
+                      <SheetHeader>
+                        <SheetTitle>Menu</SheetTitle>
+                      </SheetHeader>
+                      <div className="flex flex-col space-y-4 mt-6">
+                        <Button 
+                          className="bg-blue-600 hover:bg-blue-700 text-white justify-start" 
+                          onClick={() => {
+                            setIsIntegrateOpen(true);
+                            setIsMobileMenuOpen(false);
+                          }}
+                        >
+                          <Code className="h-4 w-4 mr-2" />
+                          Integrate App
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="justify-start" 
+                          onClick={() => {
+                            setIsAddCarOpen(true);
+                            setIsMobileMenuOpen(false);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Vehicle
+                        </Button>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
+
+                <VehicleAddDialog
+                  isOpen={isAddCarOpen}
+                  onClose={() => setIsAddCarOpen(false)}
+                  onSave={async (vehicleData) => {
+                    try {
+                      toast({
+                        title: "Saving Vehicle...",
+                        description: "Please wait while we save the vehicle to the database.",
+                      });
+                      const savedVehicle = await saveVehicleToBackend(vehicleData);
+                      setCars(prev => [...prev, savedVehicle as Car]);
+                      setFilteredCars(prev => [...prev, savedVehicle as Car]);
+                      setIsAddCarOpen(false);
+                      setUploadedMedia([]);
+                      setNewCar({
+                        make: '', model: '', year: '', price: '', mileage: '', location: '',
+                        fuel: '', transmission: '', condition: '', description: '', media: [] as string[], vin: ''
+                      });
+                      toast({
+                        title: "Vehicle Added Successfully!",
+                        description: `${savedVehicle.brand || savedVehicle.make} ${savedVehicle.model} added to your database.`
+                      });
+                    } catch (error) {
+                      console.error("❌ Error adding car:", error);
+                      toast({
+                        title: "Database Error",
+                        description: "Could not save vehicle to backend.",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                />
+              </>
             )}
           </div>
         </div>
       </header>
 
       {/* Search and Filter Bar */}
-
-      <div className="bg-white border-b border-gray-200 py-4">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="text-sm text-gray-600">
+      <div className="bg-white border-b border-gray-200 py-3 sm:py-4">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="flex flex-col space-y-3 sm:space-y-4">
+            {/* Results Count - Mobile: Top, Desktop: Left */}
+            <div className="text-xs sm:text-sm text-gray-600 order-1 sm:order-1">
               Showing {filteredCars.length} - {Math.min(6, filteredCars.length)} of {filteredCars.length} results
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 items-center relative">
-              <div className="relative flex-1 sm:w-80">
+            
+            {/* Search and Filter Controls */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center order-2">
+              {/* Search Input */}
+              <div className="relative flex-1 min-w-0">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Search for a car"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 text-sm sm:text-base"
                 />
               </div>
-              <Button variant="outline" className="flex items-center gap-2" onClick={() => setShowFilters(v => !v)}>
-                    <Filter className="h-4 w-4" />
+              
+              {/* Filter Button */}
+              <Button 
+                variant="outline" 
+                className="flex items-center justify-center gap-2 text-sm sm:text-base px-4 py-2 whitespace-nowrap" 
+                onClick={() => setShowFilters(v => !v)}
+              >
+                <Filter className="h-4 w-4" />
                 Filter
-                      </Button>
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Filter Component - Mobile Responsive */}
       {showFilters && filterMeta && (
-        <div className="max-w-7xl mx-auto w-full mt-2 rounded-b-xl border-t-0 shadow-lg">
-          <VehicleFilterComponent 
-            filters={pendingFilters} 
-            setFilters={setPendingFilters}
-            onClear={handleClearFilters}
-            brandOptions={filterMeta.brands.map((b: string) => ({ value: b, label: b }))}
-            modelOptions={filterMeta.models.map((m: string) => ({ value: m, label: m }))}
-            fuelTypeOptions={filterMeta.fuelTypes.map((f: string) => ({ value: f, label: f }))}
-            transmissionOptions={filterMeta.transmissions.map((t: string) => ({ value: t, label: t }))}
-          />
+        <div className="bg-white border-b border-gray-200 px-3 sm:px-4">
+          <div className="container mx-auto">
+            <VehicleFilterComponent 
+              filters={pendingFilters} 
+              setFilters={setPendingFilters}
+              onClear={handleClearFilters}
+              brandOptions={filterMeta.brands.map((b: string) => ({ value: b, label: b }))}
+              modelOptions={filterMeta.models.map((m: string) => ({ value: m, label: m }))}
+              fuelTypeOptions={filterMeta.fuelTypes.map((f: string) => ({ value: f, label: f }))}
+              transmissionOptions={filterMeta.transmissions.map((t: string) => ({ value: t, label: t }))}
+            />
+          </div>
         </div>
       )}
 
       {/* Car Grid */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:py-8">
         <CarList 
           cars={filteredCars} 
           emptyState={
-            <>
-              <div>No cars found for your filters.</div>
-              <Button className="mt-4" onClick={() => setShowRequirementDialog(true)}>
+            <div className="text-center py-8 sm:py-12">
+              <div className="text-sm sm:text-base mb-4">No cars found for your filters.</div>
+              <Button 
+                className="text-sm sm:text-base px-4 sm:px-6" 
+                onClick={() => setShowRequirementDialog(true)}
+              >
                 Request a Car
               </Button>
-            </>
+            </div>
           }
         />
       </div>
 
-      {/* Requirement Dialog */}
+      {/* Requirement Dialog - Mobile Responsive */}
       <Dialog open={showRequirementDialog} onOpenChange={setShowRequirementDialog}>
-        <DialogContent>
-          <DialogTitle>Request a Car</DialogTitle>
+        <DialogContent className="max-w-[95vw] sm:max-w-md mx-2">
+          <DialogTitle className="text-lg sm:text-xl">Request a Car</DialogTitle>
           {requirementSubmitted ? (
-            <div className="text-center py-8">Thank you! We have registered your requirement and will reach out when we find a match.</div>
+            <div className="text-center py-6 sm:py-8 text-sm sm:text-base">
+              Thank you! We have registered your requirement and will reach out when we find a match.
+            </div>
           ) : (
             <form
-              className="space-y-4"
+              className="space-y-3 sm:space-y-4"
               onSubmit={async e => {
                 e.preventDefault();
-                // Send filter + contact data to backend
                 const payload = {
                   filters: pendingFilters,
                   contact: requirementContact
@@ -603,20 +647,25 @@ const handleAddCar = async () => {
                 value={requirementContact.name}
                 onChange={e => setRequirementContact({ ...requirementContact, name: e.target.value })}
                 required
+                className="text-sm sm:text-base"
               />
               <Input
                 placeholder="Email"
                 value={requirementContact.email}
                 onChange={e => setRequirementContact({ ...requirementContact, email: e.target.value })}
                 required
+                className="text-sm sm:text-base"
               />
               <Input
                 placeholder="Phone"
                 value={requirementContact.phone}
                 onChange={e => setRequirementContact({ ...requirementContact, phone: e.target.value })}
                 required
+                className="text-sm sm:text-base"
               />
-              <Button type="submit" className="w-full">Submit Requirement</Button>
+              <Button type="submit" className="w-full text-sm sm:text-base">
+                Submit Requirement
+              </Button>
             </form>
           )}
         </DialogContent>
@@ -626,4 +675,3 @@ const handleAddCar = async () => {
 };
 
 export default Index;
-
