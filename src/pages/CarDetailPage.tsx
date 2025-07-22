@@ -13,7 +13,7 @@ const CarDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="w-screen h-screen bg-white overflow-hidden">
+    <div className="w-screen h-screen bg-white overflow-auto">
       <CarDetailContent
         carId={carId}
         onBack={() => navigate(-1)}
