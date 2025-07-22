@@ -132,8 +132,6 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
   const [uploadedMedia, setUploadedMedia] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   
   // Add validation error state
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -304,13 +302,18 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
 
     // Validate the field
     const error = validateField(field, value);
-    setValidationErrors(prev => ({
-      ...prev,
-      [field]: error || undefined
-    }));
-
-    // Clear the error if validation passes
-    if (!error) {
+    if (error) {
+      toast({
+        title: "Validation Error",
+        description: error,
+        variant: "destructive"
+      });
+      setValidationErrors(prev => ({
+        ...prev,
+        [field]: error
+      }));
+    } else {
+      // Clear the error if validation passes
       setValidationErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[field];
@@ -329,12 +332,17 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
         field === 'insuranceValidityMonth' ? value : vehicleData.insuranceValidityMonth || ''
       );
       
-      setValidationErrors(prev => ({
-        ...prev,
-        dateLogic: dateError || undefined
-      }));
-      
-      if (!dateError) {
+      if (dateError) {
+        toast({
+          title: "Date Logic Error",
+          description: dateError,
+          variant: "destructive"
+        });
+        setValidationErrors(prev => ({
+          ...prev,
+          dateLogic: dateError
+        }));
+      } else {
         setValidationErrors(prev => {
           const newErrors = { ...prev };
           delete newErrors.dateLogic;
@@ -352,18 +360,23 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
   const handleMediaUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      setUploadSuccess(false);
-      setUploadError(null);
       setUploading(true);
       for (const file of Array.from(files)) {
         setUploadProgress(0);
         try {
           const url = await uploadMediaToBackend(file, (progress) => setUploadProgress(progress));
           setUploadedMedia(prev => ([...prev, url] as string[]));
-          setUploadSuccess(true);
+          toast({
+            title: "Upload Successful",
+            description: "Media file uploaded successfully.",
+            variant: "default"
+          });
         } catch (err) {
-          setUploadSuccess(false);
-          setUploadError('Media upload failed. Please try again.');
+          toast({
+            title: "Upload Failed",
+            description: "Media upload failed. Please try again.",
+            variant: "destructive"
+          });
         }
         setUploadProgress(null);
       }
@@ -415,9 +428,10 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
     // Check for validation errors
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
+      const errorMessages = Object.values(errors);
       toast({
         title: "Validation Errors",
-        description: "Please fix the validation errors before saving.",
+        description: `Please fix the following errors: ${errorMessages.join(', ')}`,
         variant: "destructive"
       });
       return;
@@ -466,6 +480,11 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
 
     try {
       await onSave(payload);
+      toast({
+        title: "Success",
+        description: "Vehicle information saved successfully.",
+        variant: "default"
+      });
       resetForm(); // <-- Reset form state
       onClose();
     } catch (error) {
@@ -534,8 +553,6 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
       setUploadedMedia([]);
       setUploadProgress(null);
       setUploading(false);
-      setUploadSuccess(false);
-      setUploadError(null);
       setVehicleData({
         vin: '', year: '', make: '', model: '', trim: '', bodyStyle: undefined, doors: '', manufactureMonth: undefined, manufactureYear: undefined, brand: '', noOfOwner: undefined, homeTestDrive: undefined, registrationMonth: undefined, registrationYear: undefined, insuranceValidityMonth: undefined, insuranceValidityYear: undefined, insuranceValid: undefined, insuranceType: '', rto: '', engineCapacity: '', bodyStyleDetails: undefined, ownerDetails: undefined, homeTestDriveDetails: undefined, kmRun: '', fuelTypeDetails: undefined, transmissionTypeDetails: undefined, exteriorColorDetails: '', interiorColorDetails: '', condition: undefined, sellingPrice: '', status: undefined, mileage: '', mileageUnit: '', fuelType: '', driveType: '', transmissionType: '', engineType: '', exteriorColor: '', interiorColor: '', description: '', interior: [], convenience: [], safety: [], exterior: [], performance: [], documentsAvailable: [], additional: []
       });
@@ -568,16 +585,6 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
         </DialogDescription>
         <div className="flex flex-col h-full">
           <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-4 relative">
-            {/* Global date logic error display */}
-            {validationErrors.dateLogic && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center gap-2 text-red-700">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span className="text-sm font-medium">Date Logic Error:</span>
-                </div>
-                <p className="text-red-600 text-sm mt-1">{validationErrors.dateLogic}</p>
-              </div>
-            )}
             
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col w-full">
               <TabsList className="grid grid-cols-5 mx-0 sm:mx-7 mt-4 mb-0 max-w-4xl justify-self-center">
@@ -1064,12 +1071,6 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
                               />
                               <div className="text-xs mt-1 font-semibold text-blue-700">{uploadProgress}%</div>
                             </div>
-                          )}
-                          {uploadSuccess && !uploading && (
-                            <div className="mt-2 text-green-600 font-semibold text-xs sm:text-sm">Upload complete!</div>
-                          )}
-                          {uploadError && (
-                            <div className="mt-2 text-red-600 font-semibold text-xs sm:text-sm">{uploadError}</div>
                           )}
                         </div>
                       </div>

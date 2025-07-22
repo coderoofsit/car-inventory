@@ -15,6 +15,8 @@ const isEmbedded = window.self !== window.top;
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+    <Toaster />
+
       <Router>
         
         <Routes>

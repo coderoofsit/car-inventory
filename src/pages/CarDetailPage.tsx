@@ -23,5 +23,4 @@ const CarDetailPage: React.FC = () => {
     </div>
   );
 };
-
 export default CarDetailPage; 
