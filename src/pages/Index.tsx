@@ -464,11 +464,11 @@ const handleAddCar = async () => {
       <Plus className="h-4 w-4" />
       Add vehicle(s)
     </Button>
-    <Link to="/admin">
+    {/* <Link to="/admin">
       <Button className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold">
         Admin
       </Button>
-    </Link>
+    </Link> */}
     <VehicleAddDialog
       isOpen={isAddCarOpen}
       onClose={() => setIsAddCarOpen(false)}
