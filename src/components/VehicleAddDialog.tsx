@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, X, Search } from 'lucide-react';
+import { Upload, X, Search, AlertTriangle } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Progress } from "@/components/ui/progress";
 import { uploadMediaToBackend } from "@/lib/mediaAPI";
@@ -20,6 +20,90 @@ interface VehicleAddDialogProps {
   editCar?: any;
   mode?: 'add' | 'edit';
 }
+
+// Validation helper functions
+const validateVIN = (vin: string): string | null => {
+  if (!vin.trim()) return null;
+  if (vin.length !== 17) return 'VIN must be exactly 17 characters';
+  if (!/^[A-HJ-NPR-Z0-9]{17}$/i.test(vin)) return 'VIN contains invalid characters';
+  return null;
+};
+
+const validateKmRun = (km: string): string | null => {
+  if (!km.trim()) return null;
+  const kmValue = parseInt(km);
+  if (isNaN(kmValue)) return 'KM run must be a valid number';
+  if (kmValue < 0) return 'KM run cannot be negative';
+  if (kmValue > 2000000) return 'KM run seems unreasonably high (max: 2,000,000)';
+  return null;
+};
+
+const validateSellingPrice = (price: string): string | null => {
+  if (!price.trim()) return null;
+  const priceValue = parseFloat(price);
+  if (isNaN(priceValue)) return 'Price must be a valid number';
+  if (priceValue < 0) return 'Price cannot be negative';
+  if (priceValue < 1000) return 'Price seems too low (minimum: ₹1,000)';
+  if (priceValue > 100000000) return 'Price seems unreasonably high (max: ₹10 crores)';
+  return null;
+};
+
+const validateEngineCapacity = (capacity: string): string | null => {
+  if (!capacity.trim()) return null;
+  const capacityValue = parseInt(capacity);
+  if (isNaN(capacityValue)) return 'Engine capacity must be a valid number';
+  if (capacityValue < 0) return 'Engine capacity cannot be negative';
+  if (capacityValue < 50) return 'Engine capacity seems too small (minimum: 50cc)';
+  if (capacityValue > 10000) return 'Engine capacity seems unreasonably large (max: 10,000cc)';
+  return null;
+};
+
+const validateYear = (year: string, field: string): string | null => {
+  if (!year.trim()) return null;
+  const yearValue = parseInt(year);
+  const currentYear = new Date().getFullYear();
+  if (isNaN(yearValue)) return `${field} must be a valid year`;
+  if (yearValue < 1900) return `${field} cannot be before 1900`;
+  if (field === 'Manufacture Year' && yearValue > currentYear) {
+    return 'Manufacture year cannot be in the future';
+  }
+  if (field === 'Registration Year' && yearValue > currentYear) {
+    return 'Registration year cannot be in the future';
+  }
+  if (field === 'Insurance Year' && yearValue > currentYear + 5) {
+    return 'Insurance validity year seems too far in the future';
+  }
+  return null;
+};
+
+const validateDateLogic = (
+  manufactureYear: string, 
+  manufactureMonth: string,
+  registrationYear: string, 
+  registrationMonth: string,
+  insuranceYear: string,
+  insuranceMonth: string
+): string | null => {
+  // Check if registration is after manufacture
+  if (manufactureYear && manufactureMonth && registrationYear && registrationMonth) {
+    const manufactureDate = new Date(parseInt(manufactureYear), parseInt(manufactureMonth) - 1);
+    const registrationDate = new Date(parseInt(registrationYear), parseInt(registrationMonth) - 1);
+    if (registrationDate < manufactureDate) {
+      return 'Registration date cannot be before manufacture date';
+    }
+  }
+
+  // Check if insurance validity is reasonable
+  if (registrationYear && registrationMonth && insuranceYear && insuranceMonth) {
+    const registrationDate = new Date(parseInt(registrationYear), parseInt(registrationMonth) - 1);
+    const insuranceDate = new Date(parseInt(insuranceYear), parseInt(insuranceMonth) - 1);
+    if (insuranceDate < registrationDate) {
+      return 'Insurance validity cannot be before registration date';
+    }
+  }
+
+  return null;
+};
 
 const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, onSave, editCar, mode = 'add' }) => {
   // Month and Year arrays for dropdowns
@@ -50,6 +134,10 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  
+  // Add validation error state
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
   const [vehicleData, setVehicleData] = useState({
     // Vehicle Information
     vin: '',
@@ -104,78 +192,156 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
   });
   const [inspectionReport, setInspectionReport] = useState({});
 
-// 1. Add a function to reset all form state
-const resetForm = () => {
-  setVehicleData({
-    vin: '',
-    year: '',
-    make: '',
-    model: '',
-    trim: '',
-    bodyStyle: undefined,
-    doors: '',
-    manufactureMonth: undefined,
-    manufactureYear: undefined,
-    brand: '',
-    noOfOwner: undefined,
-    homeTestDrive: undefined,
-    registrationMonth: undefined,
-    registrationYear: undefined,
-    insuranceValidityMonth: undefined,
-    insuranceValidityYear: undefined,
-    insuranceValid: undefined,
-    insuranceType: '',
-    rto: '',
-    engineCapacity: '',
-    bodyStyleDetails: undefined,
-    ownerDetails: undefined,
-    homeTestDriveDetails: undefined,
-    kmRun: '',
-    fuelTypeDetails: undefined,
-    transmissionTypeDetails: undefined,
-    exteriorColorDetails: '',
-    interiorColorDetails: '',
-    condition: undefined,
-    sellingPrice: '',
-    status: undefined,
-    mileage: '',
-    mileageUnit: '',
-    fuelType: '',
-    driveType: '',
-    transmissionType: '',
-    engineType: '',
-    exteriorColor: '',
-    interiorColor: '',
-    description: '',
-    interior: [],
-    convenience: [],
-    safety: [],
-    exterior: [],
-    performance: [],
-    documentsAvailable: [],
-    additional: []
-  });
-  setUploadedMedia([]);
-  setNewAdditionalFeature('');
-  setActiveTab('info');
-};
+  // Enhanced validation function
+  const validateField = (field: string, value: string): string | null => {
+    switch (field) {
+      case 'vin':
+        return validateVIN(value);
+      case 'kmRun':
+        return validateKmRun(value);
+      case 'sellingPrice':
+        return validateSellingPrice(value);
+      case 'engineCapacity':
+        return validateEngineCapacity(value);
+      case 'manufactureYear':
+        return validateYear(value, 'Manufacture Year');
+      case 'registrationYear':
+        return validateYear(value, 'Registration Year');
+      case 'insuranceValidityYear':
+        return validateYear(value, 'Insurance Year');
+      default:
+        return null;
+    }
+  };
 
-// 3. Optionally, also reset form when dialog is closed
-const handleDialogClose = () => {
-  resetForm();
-  onClose();
-};
+  // Validate date relationships
+  const validateDateRelationships = (): string | null => {
+    return validateDateLogic(
+      vehicleData.manufactureYear || '',
+      vehicleData.manufactureMonth || '',
+      vehicleData.registrationYear || '',
+      vehicleData.registrationMonth || '',
+      vehicleData.insuranceValidityYear || '',
+      vehicleData.insuranceValidityMonth || ''
+    );
+  };
+
+  // 1. Add a function to reset all form state
+  const resetForm = () => {
+    setVehicleData({
+      vin: '',
+      year: '',
+      make: '',
+      model: '',
+      trim: '',
+      bodyStyle: undefined,
+      doors: '',
+      manufactureMonth: undefined,
+      manufactureYear: undefined,
+      brand: '',
+      noOfOwner: undefined,
+      homeTestDrive: undefined,
+      registrationMonth: undefined,
+      registrationYear: undefined,
+      insuranceValidityMonth: undefined,
+      insuranceValidityYear: undefined,
+      insuranceValid: undefined,
+      insuranceType: '',
+      rto: '',
+      engineCapacity: '',
+      bodyStyleDetails: undefined,
+      ownerDetails: undefined,
+      homeTestDriveDetails: undefined,
+      kmRun: '',
+      fuelTypeDetails: undefined,
+      transmissionTypeDetails: undefined,
+      exteriorColorDetails: '',
+      interiorColorDetails: '',
+      condition: undefined,
+      sellingPrice: '',
+      status: undefined,
+      mileage: '',
+      mileageUnit: '',
+      fuelType: '',
+      driveType: '',
+      transmissionType: '',
+      engineType: '',
+      exteriorColor: '',
+      interiorColor: '',
+      description: '',
+      interior: [],
+      convenience: [],
+      safety: [],
+      exterior: [],
+      performance: [],
+      documentsAvailable: [],
+      additional: []
+    });
+    setUploadedMedia([]);
+    setNewAdditionalFeature('');
+    setActiveTab('info');
+    setValidationErrors({});
+  };
+
+  // 3. Optionally, also reset form when dialog is closed
+  const handleDialogClose = () => {
+    resetForm();
+    onClose();
+  };
 
   // Add state for new additional feature input
   const [newAdditionalFeature, setNewAdditionalFeature] = useState<string>('');
   // Add state for search text in each feature category
   const [featureSearch, setFeatureSearch] = useState<Record<string, string>>({});
 
+  // Enhanced input change handler with validation
   const handleInputChange = (field: string, value: string) => {
+    // Update the value
     setVehicleData(prev => ({
       ...prev,
       [field]: value === '' || value === undefined || value === null ? undefined : value
     }));
+
+    // Validate the field
+    const error = validateField(field, value);
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: error || undefined
+    }));
+
+    // Clear the error if validation passes
+    if (!error) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+
+    // Validate date relationships when any date field changes
+    if (['manufactureYear', 'manufactureMonth', 'registrationYear', 'registrationMonth', 'insuranceValidityYear', 'insuranceValidityMonth'].includes(field)) {
+      const dateError = validateDateLogic(
+        field === 'manufactureYear' ? value : vehicleData.manufactureYear || '',
+        field === 'manufactureMonth' ? value : vehicleData.manufactureMonth || '',
+        field === 'registrationYear' ? value : vehicleData.registrationYear || '',
+        field === 'registrationMonth' ? value : vehicleData.registrationMonth || '',
+        field === 'insuranceValidityYear' ? value : vehicleData.insuranceValidityYear || '',
+        field === 'insuranceValidityMonth' ? value : vehicleData.insuranceValidityMonth || ''
+      );
+      
+      setValidationErrors(prev => ({
+        ...prev,
+        dateLogic: dateError || undefined
+      }));
+      
+      if (!dateError) {
+        setValidationErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.dateLogic;
+          return newErrors;
+        });
+      }
+    }
   };
   
   // Also add this helper function to safely get Select values
@@ -222,8 +388,41 @@ const handleDialogClose = () => {
     return cleaned;
   };
   
-  // When preparing the payload for saving the vehicle, ensure 'additional' is an array of strings
+  // Enhanced save function with comprehensive validation
   const handleSave = async () => {
+    // Clear previous validation errors
+    setValidationErrors({});
+
+    // Validate all fields
+    const errors: Record<string, string> = {};
+    
+    // Validate individual fields
+    Object.entries(vehicleData).forEach(([field, value]) => {
+      if (typeof value === 'string') {
+        const error = validateField(field, value);
+        if (error) {
+          errors[field] = error;
+        }
+      }
+    });
+
+    // Validate date relationships
+    const dateError = validateDateRelationships();
+    if (dateError) {
+      errors.dateLogic = dateError;
+    }
+
+    // Check for validation errors
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      toast({
+        title: "Validation Errors",
+        description: "Please fix the validation errors before saving.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Validate required fields
     const requiredFields = [
       { field: 'brand', label: 'Brand' },
@@ -254,20 +453,6 @@ const handleDialogClose = () => {
       return;
     }
 
-    // Registration date must be before insurance validity date
-    if (vehicleData.registrationYear && vehicleData.registrationMonth && vehicleData.insuranceValidityYear && vehicleData.insuranceValidityMonth) {
-      const regDate = new Date(Number(vehicleData.registrationYear), Number(vehicleData.registrationMonth) - 1, 1);
-      const insDate = new Date(Number(vehicleData.insuranceValidityYear), Number(vehicleData.insuranceValidityMonth) - 1, 1);
-      if (regDate >= insDate) {
-        toast({
-          title: "Invalid Dates",
-          description: 'Registration date must be before Insurance Validity date.',
-          variant: "destructive"
-        });
-        return;
-      }
-    }
-
     const cleanedData = cleanVehicleData(vehicleData);
     const payload = {
       ...cleanedData,
@@ -278,6 +463,7 @@ const handleDialogClose = () => {
       media: uploadedMedia,
       location_id: import.meta.env.VITE_LOCATION_ID,
     };
+
     try {
       await onSave(payload);
       resetForm(); // <-- Reset form state
@@ -356,12 +542,24 @@ const handleDialogClose = () => {
       setInspectionReport({});
       setNewAdditionalFeature('');
       setFeatureSearch({});
+      setValidationErrors({});
     }
   }, [isOpen]);
 
+  // Helper component for displaying validation errors
+  const ValidationError: React.FC<{ error?: string }> = ({ error }) => {
+    if (!error) return null;
+    return (
+      <div className="flex items-center gap-1 text-red-500 text-xs mt-1">
+        <AlertTriangle className="h-3 w-3" />
+        <span>{error}</span>
+      </div>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogClose}>
-      <DialogContent className="relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-lg sm:max-w-2xl md:w-[800px] md:h-[700px] max-w-none p-0 overflow-hidden">
+      <DialogContent className="relative fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-lg sm:max-w-2xl md:w-[900px] md:h-[700px] max-w-none p-0 overflow-hidden">
         <DialogTitle asChild>
           <span className="sr-only">{mode === 'edit' ? 'Edit Vehicle' : 'Add Vehicle'}</span>
         </DialogTitle>
@@ -370,8 +568,19 @@ const handleDialogClose = () => {
         </DialogDescription>
         <div className="flex flex-col h-full">
           <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-4 relative">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="grid grid-cols-5 mx-0 sm:mx-7 mt-4 mb-0 max-w-3xl justify-self-center">
+            {/* Global date logic error display */}
+            {validationErrors.dateLogic && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center gap-2 text-red-700">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-sm font-medium">Date Logic Error:</span>
+                </div>
+                <p className="text-red-600 text-sm mt-1">{validationErrors.dateLogic}</p>
+              </div>
+            )}
+            
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col w-full">
+              <TabsList className="grid grid-cols-5 mx-0 sm:mx-7 mt-4 mb-0 max-w-4xl justify-self-center">
                 {[{ value: "info", label: "Vehicle Information" }, { value: "details", label: "Vehicle Details" }, { value: "photos", label: "Vehicle Photos" }, { value: "features", label: "Vehicle Features" }, { value: "inspection", label: "Inspection Report" }].map(tab => (
                   <TabsTrigger
                     key={tab.value}
@@ -404,14 +613,17 @@ const handleDialogClose = () => {
                       <div className="relative w-full sm:w-2/3">
                         <Input
                           id="vin"
-                          placeholder="Enter VIN"
+                          placeholder="Enter VIN (17 characters)"
                           value={vehicleData.vin}
-                          onChange={(e) => handleInputChange('vin', e.target.value)}
-                          className="w-full h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
+                          onChange={(e) => handleInputChange('vin', e.target.value.toUpperCase())}
+                          className={`w-full h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400 ${validationErrors.vin ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+                          maxLength={17}
                         />
                         <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400 bg-blue-100 rounded p-1" />
+                        <ValidationError error={validationErrors.vin} />
                       </div>
                     </div>
+
                     {/* Manufacture Year (Month, Year) */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="manufactureMonth" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Manufacture Month/Year <span className="text-red-500">*</span></Label>
@@ -429,21 +641,25 @@ const handleDialogClose = () => {
                             ))}
                           </SelectContent>
                         </Select>
-                        <Select
-                          value={vehicleData.manufactureYear}
-                          onValueChange={(value) => handleInputChange('manufactureYear', value)}
-                        >
-                          <SelectTrigger className="w-full h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                            <SelectValue placeholder="Select Year" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {years.map(year => (
-                              <SelectItem key={year.value} value={year.value}>{year.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex flex-col flex-1">
+                          <Select
+                            value={vehicleData.manufactureYear}
+                            onValueChange={(value) => handleInputChange('manufactureYear', value)}
+                          >
+                            <SelectTrigger className={`w-full h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border rounded-lg bg-blue-50 text-gray-700 ${validationErrors.manufactureYear ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}>
+                              <SelectValue placeholder="Select Year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {years.map(year => (
+                                <SelectItem key={year.value} value={year.value}>{year.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <ValidationError error={validationErrors.manufactureYear} />
+                        </div>
                       </div>
                     </div>
+
                     {/* Brand */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="brand" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Brand: <span className="text-red-500">*</span></Label>
@@ -455,6 +671,7 @@ const handleDialogClose = () => {
                         className="w-full sm:w-2/3 h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
                       />
                     </div>
+
                     {/* Model */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="model" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Model: <span className="text-red-500">*</span></Label>
@@ -484,21 +701,25 @@ const handleDialogClose = () => {
                             ))}
                           </SelectContent>
                         </Select>
-                        <Select
-                          value={vehicleData.registrationYear}
-                          onValueChange={(value) => handleInputChange('registrationYear', value)}
-                        >
-                          <SelectTrigger className="w-full h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                            <SelectValue placeholder="Select Year" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {years.map(year => (
-                              <SelectItem key={year.value} value={year.value}>{year.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex flex-col flex-1">
+                          <Select
+                            value={vehicleData.registrationYear}
+                            onValueChange={(value) => handleInputChange('registrationYear', value)}
+                          >
+                            <SelectTrigger className={`w-full h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border rounded-lg bg-blue-50 text-gray-700 ${validationErrors.registrationYear ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}>
+                              <SelectValue placeholder="Select Year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {years.map(year => (
+                                <SelectItem key={year.value} value={year.value}>{year.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <ValidationError error={validationErrors.registrationYear} />
+                        </div>
                       </div>
                     </div>
+
                     {/* Insurance Validity (Month, Year, Yes/No) */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="insuranceValidityMonth" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Insurance Validity Month</Label>
@@ -516,21 +737,25 @@ const handleDialogClose = () => {
                             ))}
                           </SelectContent>
                         </Select>
-                        <Select
-                          value={vehicleData.insuranceValidityYear}
-                          onValueChange={(value) => handleInputChange('insuranceValidityYear', value)}
-                        >
-                          <SelectTrigger className="w-full h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700">
-                            <SelectValue placeholder="Select Year" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {years.map(year => (
-                              <SelectItem key={year.value} value={year.value}>{year.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex flex-col flex-1">
+                          <Select
+                            value={vehicleData.insuranceValidityYear}
+                            onValueChange={(value) => handleInputChange('insuranceValidityYear', value)}
+                          >
+                            <SelectTrigger className={`w-full h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border rounded-lg bg-blue-50 text-gray-700 ${validationErrors.insuranceValidityYear ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}>
+                              <SelectValue placeholder="Select Year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {years.map(year => (
+                                <SelectItem key={year.value} value={year.value}>{year.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <ValidationError error={validationErrors.insuranceValidityYear} />
+                        </div>
                       </div>
                     </div>
+
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="insuranceValid" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Insurance Valid?</Label>
                       <Select 
@@ -546,6 +771,7 @@ const handleDialogClose = () => {
                         </SelectContent>
                       </Select>
                     </div>
+
                     {/* Insurance Type */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="insuranceType" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Insurance Type:</Label>
@@ -557,6 +783,7 @@ const handleDialogClose = () => {
                         className="w-full sm:w-2/3 h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
                       />
                     </div>
+
                     {/* RTO */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="rto" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">RTO:</Label>
@@ -568,18 +795,25 @@ const handleDialogClose = () => {
                         className="w-full sm:w-2/3 h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
                       />
                     </div>
+
                     {/* Engine Capacity (cc) */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="engineCapacity" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Engine Capacity (cc):</Label>
-                      <Input
-                        id="engineCapacity"
-                        placeholder="Enter Engine Capacity"
-                        type="number"
-                        value={vehicleData.engineCapacity || ''}
-                        onChange={(e) => handleInputChange('engineCapacity', e.target.value)}
-                        className="w-full sm:w-2/3 h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
-                      />
+                      <div className="w-full sm:w-2/3">
+                        <Input
+                          id="engineCapacity"
+                          placeholder="Enter Engine Capacity (50-10000cc)"
+                          type="number"
+                          value={vehicleData.engineCapacity || ''}
+                          onChange={(e) => handleInputChange('engineCapacity', e.target.value)}
+                          className={`w-full h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400 ${validationErrors.engineCapacity ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+                          min="50"
+                          max="10000"
+                        />
+                        <ValidationError error={validationErrors.engineCapacity} />
+                      </div>
                     </div>
+
                     {/* Description */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="description" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Description:</Label>
@@ -614,18 +848,25 @@ const handleDialogClose = () => {
                         </SelectContent>
                       </Select>
                     </div>
+
                     {/* Selling Price */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="sellingPrice" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Selling Price (INR): <span className="text-red-500">*</span></Label>
-                      <Input
-                        id="sellingPrice"
-                        placeholder="Enter Selling Price"
-                        type="number"
-                        value={vehicleData.sellingPrice}
-                        onChange={(e) => handleInputChange('sellingPrice', e.target.value)}
-                        className="w-full sm:w-2/3 h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
-                      />
+                      <div className="w-full sm:w-2/3">
+                        <Input
+                          id="sellingPrice"
+                          placeholder="Enter Selling Price (₹1,000 - ₹10,00,00,000)"
+                          type="number"
+                          value={vehicleData.sellingPrice}
+                          onChange={(e) => handleInputChange('sellingPrice', e.target.value)}
+                          className={`w-full h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400 ${validationErrors.sellingPrice ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+                          min="1000"
+                          max="100000000"
+                        />
+                        <ValidationError error={validationErrors.sellingPrice} />
+                      </div>
                     </div>
+
                     {/* Status */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="status" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Status: <span className="text-red-500">*</span></Label>
@@ -644,6 +885,7 @@ const handleDialogClose = () => {
                         </SelectContent>
                       </Select>
                     </div>
+
                     {/* Body Style */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="bodyStyleDetails" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Body Style:</Label>
@@ -665,6 +907,7 @@ const handleDialogClose = () => {
                         </SelectContent>
                       </Select>
                     </div>
+
                     {/* Owner */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="ownerDetails" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Owner:</Label>
@@ -684,6 +927,7 @@ const handleDialogClose = () => {
                         </SelectContent>
                       </Select>
                     </div>
+
                     {/* Home Test Drive Available? */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="homeTestDriveDetails" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Home Test Drive Available?</Label>
@@ -700,18 +944,25 @@ const handleDialogClose = () => {
                         </SelectContent>
                       </Select>
                     </div>
+
                     {/* KM run */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="kmRun" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">KM run: <span className="text-red-500">*</span></Label>
-                      <Input
-                        id="kmRun"
-                        placeholder="Enter KM run"
-                        type="number"
-                        value={vehicleData.kmRun || ''}
-                        onChange={(e) => handleInputChange('kmRun', e.target.value)}
-                        className="w-full sm:w-2/3 h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
-                      />
+                      <div className="w-full sm:w-2/3">
+                        <Input
+                          id="kmRun"
+                          placeholder="Enter KM run (0 - 2,000,000)"
+                          type="number"
+                          value={vehicleData.kmRun || ''}
+                          onChange={(e) => handleInputChange('kmRun', e.target.value)}
+                          className={`w-full h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400 ${validationErrors.kmRun ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
+                          min="0"
+                          max="2000000"
+                        />
+                        <ValidationError error={validationErrors.kmRun} />
+                      </div>
                     </div>
+
                     {/* Fuel Type */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="fuelTypeDetails" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Fuel Type: <span className="text-red-500">*</span></Label>
@@ -731,6 +982,7 @@ const handleDialogClose = () => {
                         </SelectContent>
                       </Select>
                     </div>
+
                     {/* Transmission Type */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="transmissionTypeDetails" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Transmission Type: <span className="text-red-500">*</span></Label>
@@ -747,6 +999,7 @@ const handleDialogClose = () => {
                         </SelectContent>
                       </Select>
                     </div>
+
                     {/* Exterior Colour */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="exteriorColorDetails" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Exterior Colour:</Label>
@@ -758,6 +1011,7 @@ const handleDialogClose = () => {
                         className="w-full sm:w-2/3 h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
                       />
                     </div>
+
                     {/* Interior Color */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="interiorColorDetails" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Interior Color:</Label>
@@ -1087,7 +1341,7 @@ const handleDialogClose = () => {
 
               <Button
                 onClick={handleSave}
-                disabled={activeTab !== "inspection"}
+                disabled={activeTab !== "inspection" || Object.keys(validationErrors).length > 0}
                 className="w-32 sm:w-40 bg-green-700 hover:bg-green-800 text-white rounded-full px-4 sm:px-8 py-2 font-semibold disabled:opacity-60 disabled:cursor-not-allowed text-xs sm:text-sm"
               >
                 <span className="hidden sm:inline">Save Vehicle Info</span>
