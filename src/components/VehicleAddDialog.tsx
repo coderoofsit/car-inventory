@@ -588,7 +588,7 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
             
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col w-full">
               <TabsList className="grid grid-cols-5 mx-0 sm:mx-7 mt-4 mb-0 max-w-4xl justify-self-center">
-                {[{ value: "info", label: "Vehicle Information" }, { value: "details", label: "Vehicle Details" }, { value: "photos", label: "Vehicle Photos" }, { value: "features", label: "Vehicle Features" }, { value: "inspection", label: "Inspection Report" }].map(tab => (
+                {[{ value: "info", label: "Information" }, { value: "details", label: "Details" }, { value: "photos", label: "Photos" }, { value: "features", label: "Vehicle Features" }, { value: "inspection", label: "Inspection" }].map(tab => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
