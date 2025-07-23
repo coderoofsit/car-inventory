@@ -3,6 +3,8 @@ import { createContact, createOpportunity, debugStageIds } from "@/lib/ghlAPI";
 import { pipeline } from "stream";
 
 export const handleContactSubmit = async (formData: any, car?: any) => {
+  const BASE_URL = process.env.VITE_BACKEND_URL;
+  console.log("url for backend= "+BASE_URL)
   console.log('[ContactUs] handleContactSubmit called', formData, car);
   if (!formData.name || !formData.email || !formData.phone) {
     toast({
@@ -25,7 +27,7 @@ export const handleContactSubmit = async (formData: any, car?: any) => {
   };
   console.log('[ContactUs] About to POST to /api/contacts:', payload);
   try {
-    const res = await fetch(`${process.env.VITE_BACKEND_URL}/api/contacts`, {
+    const res = await fetch(`${BASE_URL}/api/contacts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
