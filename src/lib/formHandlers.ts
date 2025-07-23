@@ -152,24 +152,28 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
         customFields: [
           {
               "id": "tNc1XGzGuiub20uLwPCe", //make
-              "fieldValueString":  car?.brand || ''
+              "type": "string",
+              "field_value":  car?.brand || ''
           },
           {
               "id": "LTQztPcGdaNLMd38vGgU", //model
-              "fieldValueString": car?.model || ""
+              "type": "string",
+              "field_value": car?.model || ""
           },
           {
               "id": "A1uY67y6tg9UiSmBe10g", //year
               "type": "string",
-              "fieldValueString": car?.manufactureYear?.toString() || ''
+              "field_value": car?.manufactureYear?.toString() || ''
           },
           {
               "id": "WYkhKcm20G4MobIKAgHz", //carexchange
-              "fieldValueString": carExchangeValue
+              "type": "string",
+              "field_value": carExchangeValue
           },
           {
               "id": "JOHWQJGQsy9cuPEzsBHm", //message
-              "fieldValueString":  formData.message || ''
+              "type": "string",
+              "field_value":  formData.message || ''
           }
       ],
       };
