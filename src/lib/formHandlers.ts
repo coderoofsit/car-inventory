@@ -3,7 +3,7 @@ import { createContact, createOpportunity, debugStageIds } from "@/lib/ghlAPI";
 import { pipeline } from "stream";
 
 export const handleContactSubmit = async (formData: any, car?: any) => {
-  const BASE_URL = process.env.VITE_BACKEND_URL;
+  const BASE_URL = import.meta.env.VITE_BACKEND_URL;
   console.log("url for backend= "+BASE_URL)
   console.log('[ContactUs] handleContactSubmit called', formData, car);
   if (!formData.name || !formData.email || !formData.phone) {
@@ -41,28 +41,13 @@ export const handleContactSubmit = async (formData: any, car?: any) => {
       firstName: payload.name,
       email: payload.email,
       phone: payload.phone,
-      customField: [
-        {
-          "id": "9XZa2jj4XUnh1EQaPHHv", //make
-          "fieldValueString":  car?.brand || ''
+      customField:{
+        "9XZa2jj4XUnh1EQaPHHv": car?.brand || '',
+        "EricJ5qfNkLV7s6Hf9X2":car?.model || "",
+        "kaIKPIZtQZUPksovees5":car?.manufactureYear?.toString() || '',
+        "JAe1BBAn4dg0kaP2ZCmc":carExchangeValue,
+        "K7pAe60BBbITbm1cSb5J":formData.message || ''
       },
-      {
-          "id": "EricJ5qfNkLV7s6Hf9X2", //model
-          "fieldValueString": car?.model || ""
-      },
-      {
-          "id": "kaIKPIZtQZUPksovees5", //year
-          "fieldValueString": car?.manufactureYear?.toString() || ''
-      },
-      {
-          "id": "JAe1BBAn4dg0kaP2ZCmc", //carexchange
-          "fieldValueString": carExchangeValue
-      },
-      {
-          "id": "K7pAe60BBbITbm1cSb5J", //message
-          "fieldValueString":  formData.message || ''
-      }
-      ],
       tags: ["Website Contact"]
     };
     console.log('[ContactUs] About to send to CRM:', crmPayload);
@@ -116,7 +101,7 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
   console.log('[TestDrive] About to POST to /api/test-drives:', payload);
 
   try {
-    const res = await fetch(`${process.env.VITE_BACKEND_URL}/api/test-drives`, {
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/test-drives`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -134,28 +119,13 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
         firstName: payload.name,
         email: payload.email,
         phone: payload.phone,
-        customField: [
-          {
-            "id": "9XZa2jj4XUnh1EQaPHHv", //make
-            "fieldValueString":  car?.brand || ''
+        customField:{
+          "9XZa2jj4XUnh1EQaPHHv": car?.brand || '',
+          "EricJ5qfNkLV7s6Hf9X2":car?.model || "",
+          "kaIKPIZtQZUPksovees5":car?.manufactureYear?.toString() || '',
+          "JAe1BBAn4dg0kaP2ZCmc":carExchangeValue,
+          "K7pAe60BBbITbm1cSb5J":formData.message || ''
         },
-        {
-            "id": "EricJ5qfNkLV7s6Hf9X2", //model
-            "fieldValueString": car?.model || ""
-        },
-        {
-            "id": "kaIKPIZtQZUPksovees5", //year
-            "fieldValueString": car?.manufactureYear?.toString() || ''
-        },
-        {
-            "id": "JAe1BBAn4dg0kaP2ZCmc", //carexchange
-            "fieldValueString": carExchangeValue
-        },
-        {
-            "id": "K7pAe60BBbITbm1cSb5J", //message
-            "fieldValueString":  formData.message || ''
-        }
-        ],
         tags: ["Website Test Drive"]
         
       };
