@@ -24,6 +24,7 @@ const apiv2 = axios.create({
 // ✅ Create Contact API
 export const createContact = async (contactData: unknown) => {
   console.log('[GHL] About to POST to /contacts/ with:', contactData);
+ 
   try {
     const response = await api.post('/contacts/', contactData);
     console.log('[GHL] Response from /contacts/:', response.data);

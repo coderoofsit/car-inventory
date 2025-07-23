@@ -25,7 +25,7 @@ export const handleContactSubmit = async (formData: any, car?: any) => {
   };
   console.log('[ContactUs] About to POST to /api/contacts:', payload);
   try {
-    const res = await fetch('http://localhost:5000/api/contacts', {
+    const res = await fetch(`${process.env.VITE_BACKEND_URL}/api/contacts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -39,13 +39,28 @@ export const handleContactSubmit = async (formData: any, car?: any) => {
       firstName: payload.name,
       email: payload.email,
       phone: payload.phone,
-      customField: {
-        carexchange: carExchangeValue,
-        make: car?.brand || '',
-        model: car?.model || '',
-        year: car?.manufactureYear?.toString() || '',
-        message: payload.message || ''
+      customField: [
+        {
+          "id": "9XZa2jj4XUnh1EQaPHHv", //make
+          "fieldValueString":  car?.brand || ''
       },
+      {
+          "id": "EricJ5qfNkLV7s6Hf9X2", //model
+          "fieldValueString": car?.model || ""
+      },
+      {
+          "id": "kaIKPIZtQZUPksovees5", //year
+          "fieldValueString": car?.manufactureYear?.toString() || ''
+      },
+      {
+          "id": "JAe1BBAn4dg0kaP2ZCmc", //carexchange
+          "fieldValueString": carExchangeValue
+      },
+      {
+          "id": "K7pAe60BBbITbm1cSb5J", //message
+          "fieldValueString":  formData.message || ''
+      }
+      ],
       tags: ["Website Contact"]
     };
     console.log('[ContactUs] About to send to CRM:', crmPayload);
@@ -99,7 +114,7 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
   console.log('[TestDrive] About to POST to /api/test-drives:', payload);
 
   try {
-    const res = await fetch('http://localhost:5000/api/test-drives', {
+    const res = await fetch(`${process.env.VITE_BACKEND_URL}/api/test-drives`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -117,7 +132,28 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
         firstName: payload.name,
         email: payload.email,
         phone: payload.phone,
-        customField: payload.customField,
+        customField: [
+          {
+            "id": "9XZa2jj4XUnh1EQaPHHv", //make
+            "fieldValueString":  car?.brand || ''
+        },
+        {
+            "id": "EricJ5qfNkLV7s6Hf9X2", //model
+            "fieldValueString": car?.model || ""
+        },
+        {
+            "id": "kaIKPIZtQZUPksovees5", //year
+            "fieldValueString": car?.manufactureYear?.toString() || ''
+        },
+        {
+            "id": "JAe1BBAn4dg0kaP2ZCmc", //carexchange
+            "fieldValueString": carExchangeValue
+        },
+        {
+            "id": "K7pAe60BBbITbm1cSb5J", //message
+            "fieldValueString":  formData.message || ''
+        }
+        ],
         tags: ["Website Test Drive"]
         
       };
@@ -143,26 +179,27 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
         // The following will be filled from .env in createOpportunity
         customFields: [
           {
-            id: "carexchange",
-            value: payload.customField.carexchange || ''
+              "id": "tNc1XGzGuiub20uLwPCe", //make
+              "fieldValueString":  car?.brand || ''
           },
           {
-            id: "make", 
-            value: payload.customField.make || ''
+              "id": "LTQztPcGdaNLMd38vGgU", //model
+              "fieldValueString": car?.model || ""
           },
           {
-            id: "model",
-            value: payload.customField.model || ''
+              "id": "A1uY67y6tg9UiSmBe10g", //year
+              "type": "string",
+              "fieldValueString": car?.manufactureYear?.toString() || ''
           },
           {
-            id: "year",
-            value: payload.customField.year || ''
+              "id": "WYkhKcm20G4MobIKAgHz", //carexchange
+              "fieldValueString": carExchangeValue
           },
           {
-            id: "message",
-            value: payload.customField.message || ''
+              "id": "JOHWQJGQsy9cuPEzsBHm", //message
+              "fieldValueString":  formData.message || ''
           }
-        ]
+      ],
       };
       const crmOppResult = await createOpportunity(opportunityPayload);
       console.log('[TestDrive] CRM Opportunity response:', crmOppResult);
