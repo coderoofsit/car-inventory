@@ -472,7 +472,7 @@ return (
                             {copied ? "Copied!" : "Copy Embed Code with controls "}
                           </Button>
                         </div>
-                        /for NotOnGHL
+                        {/*for NotOnGHL*/}
                         <div className="bg-gray-100 p-3 sm:p-4 rounded-lg">
                           <code className="text-xs sm:text-sm text-gray-800 block whitespace-pre-wrap font-mono break-all">
                             {iframeCodeNotOnGHL}
