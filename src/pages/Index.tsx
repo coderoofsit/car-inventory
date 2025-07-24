@@ -62,6 +62,7 @@ function useDebouncedEffect(effect: () => void, deps: React.DependencyList, dela
 }
 
 const Index = () => {
+console.log('Index component render');
 const [cars, setCars] = useState<Car[]>([]);
 const [filteredCars, setFilteredCars] = useState<Car[]>([]);
 const [showFilters, setShowFilters] = useState(false);
@@ -229,31 +230,7 @@ useDebouncedEffect(() => {
     if (searchTerm.trim()) {
       params.search = searchTerm.trim();
     }
-    
-    // Include current active filters
-    if (hasActiveFilters(filters, filterMeta)) {
-      if (filters.brands && filters.brands.length > 0) params.brand = filters.brands;
-      if (filters.models && filters.models.length > 0) params.model = filters.models;
-      if (filters.bodyStyles && filters.bodyStyles.length > 0) params.bodyStyle = filters.bodyStyles;
-      if (filters.fuelTypes && filters.fuelTypes.length > 0) params.fuel = filters.fuelTypes;
-      if (filters.transmission) params.transmission = filters.transmission;
-      if (filters.ownership) params.ownership = filters.ownership;
-      
-      const defaultState = getDefaultFilterState(filterMeta);
-      if (filters.yearRange && (filters.yearRange.min !== defaultState.yearRange.min || filters.yearRange.max !== defaultState.yearRange.max)) {
-        params.minYear = filters.yearRange.min;
-        params.maxYear = filters.yearRange.max;
-      }
-      if (filters.priceRange && (filters.priceRange.min !== defaultState.priceRange.min || filters.priceRange.max !== defaultState.priceRange.max)) {
-        params.minPrice = filters.priceRange.min;
-        params.maxPrice = filters.priceRange.max;
-      }
-      if (filters.kmRunRange && (filters.kmRunRange.min !== defaultState.kmRunRange.min || filters.kmRunRange.max !== defaultState.kmRunRange.max)) {
-        params.minKmRun = filters.kmRunRange.min;
-        params.maxKmRun = filters.kmRunRange.max;
-      }
-    }
-
+    // DO NOT add filters here!
     try {
       const carsData = await fetchVehiclesFromBackend(Object.keys(params).length > 0 ? params : undefined);
       setCars(carsData);
@@ -267,7 +244,6 @@ useDebouncedEffect(() => {
 
   performSearch();
 }, [searchTerm], 400);
-
 // Handler for Apply Filters
 const handleApplyFilters = async () => {
   setFilters(pendingFilters); // This will trigger the filter effect
@@ -404,7 +380,15 @@ const copyIframeCode = () => {
     description: "iFrame code has been copied to your clipboard."
   });
 };
-
+const copyIframeWithNoControlsCode = () => {
+  navigator.clipboard.writeText(iframeCodeNotOnGHL);
+  setCopied(true);
+  setTimeout(() => setCopied(false), 2000);
+  toast({
+    title: "Code Copied!",
+    description: "iFrame code has been copied to your clipboard."
+  });
+};
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -478,7 +462,7 @@ return (
                             {iframeCodeNotOnGHL}
                           </code>
                           <Button 
-                            onClick={copyIframeCode}
+                            onClick={copyIframeWithNoControlsCode}
                             className="mt-3 flex items-center gap-2 text-sm"
                             variant="outline"
                             size="sm"
@@ -609,11 +593,7 @@ return (
             {/* Search Input */}
             <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              {isSearchLoading && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <LoadingSpinner size={4} />
-                </div>
-              )}
+              
               <Input
                 placeholder="Search for a car"
                 value={searchTerm}
@@ -630,7 +610,6 @@ return (
               onClick={() => setShowFilters(v => !v)}
               disabled={isFilterLoading}
             >
-              {isFilterLoading ? <LoadingSpinner size={4} /> : <Filter className="h-4 w-4" />}
               Filter
             </Button>
           </div>
