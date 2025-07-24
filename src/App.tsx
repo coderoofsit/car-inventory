@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CarDetailPage from "./pages/CarDetailPage";
 import AdminPanel from './pages/AdminPanel';
+import { useEffect } from "react";
 
 const queryClient = new QueryClient();
 
@@ -35,5 +36,6 @@ const App = () => (
     </TooltipProvider>
   </QueryClientProvider>
 );
+
 
 export default App;

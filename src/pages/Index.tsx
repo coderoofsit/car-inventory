@@ -51,6 +51,7 @@ const LoadingSpinner = ({ size = 4 }: { size?: number }) => (
 // Debounce utility
 function useDebouncedEffect(effect: () => void, deps: React.DependencyList, delay: number) {
   const callback = useRef<() => void>(() => {});
+  
   callback.current = effect;
   React.useEffect(() => {
     const handler = setTimeout(() => {
@@ -62,7 +63,14 @@ function useDebouncedEffect(effect: () => void, deps: React.DependencyList, dela
 }
 
 const Index = () => {
-console.log('Index component render');
+  console.log('Index render');
+  React.useEffect(() => {
+    const onBlur = (e) => {
+      console.log('Blur event:', e.target);
+    };
+    window.addEventListener('blur', onBlur, true);
+    return () => window.removeEventListener('blur', onBlur, true);
+  }, []);
 const [cars, setCars] = useState<Car[]>([]);
 const [filteredCars, setFilteredCars] = useState<Car[]>([]);
 const [showFilters, setShowFilters] = useState(false);
@@ -95,6 +103,7 @@ const getDefaultFilterState = (meta: any) => ({
 const [filters, setFilters] = useState<VehicleFilters>(getDefaultFilterState({}));
 const [pendingFilters, setPendingFilters] = useState<VehicleFilters>(getDefaultFilterState({}));
 const [searchTerm, setSearchTerm] = useState('');
+const inputRef = useRef<HTMLInputElement>(null);
 const [selectedMake, setSelectedMake] = useState<string>('all');
 const [isAddCarOpen, setIsAddCarOpen] = useState(false);
 const [isIntegrateOpen, setIsIntegrateOpen] = useState(false);
@@ -118,7 +127,17 @@ const [copiedNotOnGHL, setCopiedNotOnGHL] = useState(false);
 const [isEditCarOpen, setIsEditCarOpen] = useState(false);
 const [editCar, setEditCar] = useState(null);
 const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  setSearchTerm(e.target.value);
 
+  // 🔁 Focus after state update with setTimeout
+  setTimeout(() => {
+    if (inputRef.current) {
+      inputRef.current.focus(); // Re-focus input
+      console.log('Input focused again:', inputRef.current.value);
+    }
+  }, 0);
+};
 // Helper function to check if filters have actual values (not default empty state)
 const hasActiveFilters = (filterState: VehicleFilters, meta: any) => {
   const defaultState = getDefaultFilterState(meta);
@@ -220,7 +239,7 @@ React.useEffect(() => {
   };
 
   applyFilters();
-}, [pendingFilters, searchTerm, filterMeta, isInitialLoad]);
+}, [pendingFilters, filterMeta, isInitialLoad]);
 
 // Debounced search effect for search term only
 useDebouncedEffect(() => {
@@ -250,6 +269,51 @@ useDebouncedEffect(() => {
 const handleApplyFilters = async () => {
   setFilters(pendingFilters); // This will trigger the filter effect
   setShowFilters(false);
+  setIsFilterLoading(true);
+  const params: Record<string, any> = {};
+    
+    // Add search term if present
+    if (searchTerm.trim()) {
+      params.search = searchTerm.trim();
+    }
+    
+    // Only add filter params if they have actual values
+    if (hasActiveFilters(pendingFilters, filterMeta)) {
+      if (pendingFilters.brands && pendingFilters.brands.length > 0) params.brand = pendingFilters.brands;
+      if (pendingFilters.models && pendingFilters.models.length > 0) params.model = pendingFilters.models;
+      if (pendingFilters.bodyStyles && pendingFilters.bodyStyles.length > 0) params.bodyStyle = pendingFilters.bodyStyles;
+      if (pendingFilters.fuelTypes && pendingFilters.fuelTypes.length > 0) params.fuel = pendingFilters.fuelTypes;
+      if (pendingFilters.transmission) params.transmission = pendingFilters.transmission;
+      if (pendingFilters.ownership) params.ownership = pendingFilters.ownership;
+      
+      const defaultState = getDefaultFilterState(filterMeta);
+      if (pendingFilters.yearRange && (pendingFilters.yearRange.min !== defaultState.yearRange.min || pendingFilters.yearRange.max !== defaultState.yearRange.max)) {
+        params.minYear = pendingFilters.yearRange.min;
+        params.maxYear = pendingFilters.yearRange.max;
+      }
+      if (pendingFilters.priceRange && (pendingFilters.priceRange.min !== defaultState.priceRange.min || pendingFilters.priceRange.max !== defaultState.priceRange.max)) {
+        params.minPrice = pendingFilters.priceRange.min;
+        params.maxPrice = pendingFilters.priceRange.max;
+      }
+      if (pendingFilters.kmRunRange && (pendingFilters.kmRunRange.min !== defaultState.kmRunRange.min || pendingFilters.kmRunRange.max !== defaultState.kmRunRange.max)) {
+        params.minKmRun = pendingFilters.kmRunRange.min;
+        params.maxKmRun = pendingFilters.kmRunRange.max;
+      }
+    }
+
+  try {
+    const carsData = await fetchVehiclesFromBackend(Object.keys(params).length > 0 ? params : undefined);
+    setCars(carsData);
+    setFilteredCars(carsData);
+  } catch (err) {
+    toast({
+      title: "Error Applying Filters",
+      description: "Failed to fetch filtered vehicles from database.",
+      variant: "destructive"
+    });
+  } finally {
+    setIsFilterLoading(false);
+  }
 };
 
 // Handler for Clear Filters
@@ -596,12 +660,14 @@ return (
             <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               
-              <Input
+              <input
+                type="text"
                 placeholder="Search for a car"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-10 text-sm sm:text-base"
-                disabled={isSearchLoading}
+                onChange={handleSearchChange}
+                className="pl-10 pr-10 text-sm sm:text-base w-full"
+                disabled={false}
+                ref={inputRef} 
               />
             </div>
             
