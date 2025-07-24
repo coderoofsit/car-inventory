@@ -10,9 +10,12 @@ import AdminPanel from './pages/AdminPanel';
 
 const queryClient = new QueryClient();
 
-const isEmbedded = window.self !== window.top;
+const urlParams = new URLSearchParams(window.location.search);
+const isEmbedded = urlParams.get("source") === "notOnGHL";
 
 const App = () => (
+
+  
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
     <Toaster />

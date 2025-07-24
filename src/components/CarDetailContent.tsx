@@ -165,8 +165,9 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
     }
   };
 
-  const isEmbedded = window.self !== window.top;
-
+  const urlParams = new URLSearchParams(window.location.search);
+  const isEmbedded = urlParams.get("source") === "notOnGHL";
+  
   return (
           <div className="w-full min-h-screen lg:h-full flex flex-col lg:flex-row bg-white">
               {/* Media Section */}

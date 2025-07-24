@@ -23,7 +23,8 @@ import { handleContactSubmit, handleTestDriveSubmit } from "@/lib/formHandlers";
 import ContactUsDialog from "@/components/ContactUsDialog";
 import TestDriveDialog from "@/components/TestDriveDialog";
 
-const isEmbedded = window.self !== window.top;
+const urlParams = new URLSearchParams(window.location.search);
+const isEmbedded = urlParams.get("source") === "notOnGHL";
 
 const sampleCars: Car[] = [];
 
@@ -104,6 +105,12 @@ title="Car Inventory - Embed"
 style="width: 100%; height: 600px; border: 1px solid #e5e7eb; border-radius: 8px;"
 frameborder="0">
 </iframe>`);
+const [iframeCodeNotOnGHL, setIframeCodeNotOnGHL] = useState(`<iframe 
+  src="${window.location.origin}/?source=notOnGHL" 
+  title="Car Inventory - Embed" 
+  style="width: 100%; height: 600px; border: 1px solid #e5e7eb; border-radius: 8px;"
+  frameborder="0">
+  </iframe>`);
 const [copied, setCopied] = useState(false);
 const [isEditCarOpen, setIsEditCarOpen] = useState(false);
 const [editCar, setEditCar] = useState(null);
@@ -462,10 +469,24 @@ return (
                             size="sm"
                           >
                             {copied ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                            {copied ? "Copied!" : "Copy Embed Code"}
+                            {copied ? "Copied!" : "Copy Embed Code with controls "}
                           </Button>
                         </div>
-                        
+                        /for NotOnGHL
+                        <div className="bg-gray-100 p-3 sm:p-4 rounded-lg">
+                          <code className="text-xs sm:text-sm text-gray-800 block whitespace-pre-wrap font-mono break-all">
+                            {iframeCodeNotOnGHL}
+                          </code>
+                          <Button 
+                            onClick={copyIframeCode}
+                            className="mt-3 flex items-center gap-2 text-sm"
+                            variant="outline"
+                            size="sm"
+                          >
+                            {copied ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            {copied ? "Copied!" : "Copy Embed Code Without controls "}
+                          </Button>
+                        </div>
                         <div className="bg-green-50 p-3 sm:p-4 rounded-lg border border-green-200">
                           <h4 className="font-semibold text-green-800 mb-2 text-sm sm:text-base">How to Use:</h4>
                           <ol className="text-xs sm:text-sm text-green-700 space-y-1 list-decimal list-inside">
@@ -581,11 +602,7 @@ return (
     <div className="bg-white border-b border-gray-200 py-3 sm:py-4">
       <div className="container mx-auto px-3 sm:px-4">
         <div className="flex flex-col space-y-3 sm:space-y-4">
-          {/* Results Count - Mobile: Top, Desktop: Left */}
-          <div className="text-xs sm:text-sm text-gray-600 order-1 sm:order-1 flex items-center gap-2">
-            {isSearchLoading && <LoadingSpinner size={3} />}
-            Showing {filteredCars.length} - {Math.min(6, filteredCars.length)} of {filteredCars.length} results
-          </div>
+          
           
           {/* Search and Filter Controls */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center order-2">
@@ -720,7 +737,7 @@ return (
                 contact: requirementContact
               };
               try {
-                await fetch('http://localhost:5000/api/requirements', {
+                await fetch(`${import.meta.env.BASE_URL}/api/requirements`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(payload)

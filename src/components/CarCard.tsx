@@ -46,12 +46,16 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
   
   // Format price and mileage
   const formatNumber = (n: string | number) => n ? n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-';
-
+  const queryParams = new URLSearchParams(location.search);
+  const source = queryParams.get("source");
   const navigate = useNavigate();
   const handleCardClick = () => {
     if (car._id) {
       console.log('Navigating to car with _id:', car._id);
-      navigate(`/car/${car._id}`);
+      // navigate(`/car/${car._id}`);
+      const targetUrl = `/car/${car._id}${source ? `?source=${source}` : ''}`;
+      navigate(targetUrl);
+
     }
   };
 

@@ -48,12 +48,7 @@ const CarList: React.FC<CarListProps> = ({ cars, emptyState }) => {
         </div>
       </div>
 
-      {/* Optional: Show count for large lists */}
-      {cars.length > 12 && (
-        <div className="text-center text-sm text-gray-500 mt-8 px-4">
-          Showing {cars.length} vehicle{cars.length !== 1 ? 's' : ''}
-        </div>
-      )}
+      
     </div>
   );
 };
