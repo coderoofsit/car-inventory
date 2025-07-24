@@ -113,6 +113,8 @@ const [iframeCodeNotOnGHL, setIframeCodeNotOnGHL] = useState(`<iframe
   frameborder="0">
   </iframe>`);
 const [copied, setCopied] = useState(false);
+const [copiedNotOnGHL, setCopiedNotOnGHL] = useState(false);
+
 const [isEditCarOpen, setIsEditCarOpen] = useState(false);
 const [editCar, setEditCar] = useState(null);
 const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -382,8 +384,8 @@ const copyIframeCode = () => {
 };
 const copyIframeWithNoControlsCode = () => {
   navigator.clipboard.writeText(iframeCodeNotOnGHL);
-  setCopied(true);
-  setTimeout(() => setCopied(false), 2000);
+  setCopiedNotOnGHL(true);
+  setTimeout(() => setCopiedNotOnGHL(false), 2000);
   toast({
     title: "Code Copied!",
     description: "iFrame code has been copied to your clipboard."
@@ -467,8 +469,8 @@ return (
                             variant="outline"
                             size="sm"
                           >
-                            {copied ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                            {copied ? "Copied!" : "Copy Embed Code Without controls "}
+                            {copiedNotOnGHL ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            {copiedNotOnGHL ? "Copied!" : "Copy Embed Code Without controls "}
                           </Button>
                         </div>
                         <div className="bg-green-50 p-3 sm:p-4 rounded-lg border border-green-200">
