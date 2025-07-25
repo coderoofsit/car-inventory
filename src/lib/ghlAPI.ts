@@ -12,15 +12,7 @@ const api = axios.create({
     Accept: 'application/json',
   },
 });
-const apiv2 = axios.create({
-  baseURL: 'https://rest.gohighlevel.com/v2',
-  headers: {
-    Authorization: `Bearer ${import.meta.env.VITE_GHL_API_KEY}`,
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-    Version:"2021-07-28"
-  },
-});
+// 
 // ✅ Create Contact API
 export const createContact = async (contactData: unknown) => {
   //console.log('[GHL] About to POST to /contacts/ with:', contactData);

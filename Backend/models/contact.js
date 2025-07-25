@@ -6,10 +6,11 @@ const contactSchema = new mongoose.Schema({
   phone: String,
   message: String,
   customField: {
-    carexchange: { type: String, enum: ['Yes', 'No'], default: 'No' },
+    carexchange: { type: String},
     make: { type: String },
     model: { type: String },
-    year: { type: String }
+    year: { type: String },
+    carId: { type: String }
   }
 });
 

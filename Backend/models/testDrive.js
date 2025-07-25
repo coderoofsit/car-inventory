@@ -8,10 +8,12 @@ const testDriveSchema = new mongoose.Schema({
   preferredTime: String,
   message: String,
   customField: {
-    carexchange: { type: String, enum: ['Yes', 'No'], default: 'No' },
+    carexchange: { type: String},
     make: { type: String },
     model: { type: String },
-    year: { type: String }
+    year: { type: String },
+    message: { type: String },
+    carId: { type: String }
   }
 }, { timestamps: true });
 

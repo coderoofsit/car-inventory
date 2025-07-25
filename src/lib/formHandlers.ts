@@ -2,7 +2,7 @@ import { toast } from "@/hooks/use-toast";
 import { createContact, createOpportunity, debugStageIds } from "@/lib/ghlAPI";
 import { pipeline } from "stream";
 
-export const handleContactSubmit = async (formData: any, car?: any) => {
+export const handleContactSubmit = async (formData: any, car?: any, fromTestDrive:boolean = false) => {
   const BASE_URL = import.meta.env.VITE_BACKEND_URL;
   //console.log("url for backend= "+BASE_URL)
   //console.log('[ContactUs] handleContactSubmit called', formData, car);
@@ -24,7 +24,8 @@ export const handleContactSubmit = async (formData: any, car?: any) => {
       make: car?.brand || '',
       model: car?.model || '',
       year: car?.manufactureYear?.toString() || '',
-      message: formData.message || ''
+      message: formData.message || '',
+      carId: formData.customField.carid || ''
     }
   };
   //console.log('[ContactUs] About to POST to /api/contacts:', payload);
@@ -55,9 +56,11 @@ export const handleContactSubmit = async (formData: any, car?: any) => {
     };
     //console.log('[ContactUs] About to send to CRM:', crmPayload);
     try {
-      const crmResult = await createContact(crmPayload);
+      if (!fromTestDrive) {
+        const crmResult = await createContact(crmPayload);
       //console.log('[ContactUs] CRM response:', crmResult);
-      toast({ title: "CRM Success", description: "Contact sent to CRM successfully." });
+        toast({ title: "CRM Success", description: "Contact sent to CRM successfully." });
+      }
     } catch (crmError) {
       console.error('[ContactUs] CRM Error:', crmError);
       toast({ title: "CRM Failed", description: "Failed to send contact to CRM.", variant: "destructive" });
@@ -87,7 +90,10 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
     });
     return false;
   }
-
+  const contactResult = await handleContactSubmit(formData, car, true);
+  if (!contactResult) {
+    return false;
+  }
   const carExchangeValue = formData.customField.carExchange ? 'Yes' : 'No';
   //console.log('[TestDrive] formData.customField.carid:', formData.customField.carid);
   //console.log('[TestDrive] car?._id:', car?._id);
@@ -98,7 +104,8 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
       make: car?.brand || '',
       model: car?.model || '',
       year: car?.manufactureYear?.toString() || '',
-      message: formData.message || ''
+      message: formData.message || '',
+      carId: formData.customField.carid || ''
     }
   };
 
