@@ -51,7 +51,7 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
   const navigate = useNavigate();
   const handleCardClick = () => {
     if (car._id) {
-      console.log('Navigating to car with _id:', car._id);
+      //console.log('Navigating to car with _id:', car._id);
       // navigate(`/car/${car._id}`);
       const targetUrl = `/car/${car._id}${source ? `?source=${source}` : ''}`;
       navigate(targetUrl);

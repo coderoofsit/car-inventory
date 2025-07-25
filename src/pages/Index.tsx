@@ -63,10 +63,10 @@ function useDebouncedEffect(effect: () => void, deps: React.DependencyList, dela
 }
 
 const Index = () => {
-  console.log('Index render');
+  //console.log('Index render');
   React.useEffect(() => {
     const onBlur = (e) => {
-      console.log('Blur event:', e.target);
+      //console.log('Blur event:', e.target);
     };
     window.addEventListener('blur', onBlur, true);
     return () => window.removeEventListener('blur', onBlur, true);
@@ -134,7 +134,7 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   setTimeout(() => {
     if (inputRef.current) {
       inputRef.current.focus(); // Re-focus input
-      console.log('Input focused again:', inputRef.current.value);
+      //console.log('Input focused again:', inputRef.current.value);
     }
   }, 0);
 };

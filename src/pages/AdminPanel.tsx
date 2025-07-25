@@ -36,7 +36,7 @@ const AdminPanel: React.FC = () => {
         }
       })
       .catch(() => {
-        console.log('Failed to fetch cars from API, using dummy data');
+        //console.log('Failed to fetch cars from API, using dummy data');
       });
 
     // Fetch locations from GHL API

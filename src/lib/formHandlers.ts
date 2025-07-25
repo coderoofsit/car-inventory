@@ -4,8 +4,8 @@ import { pipeline } from "stream";
 
 export const handleContactSubmit = async (formData: any, car?: any) => {
   const BASE_URL = import.meta.env.VITE_BACKEND_URL;
-  console.log("url for backend= "+BASE_URL)
-  console.log('[ContactUs] handleContactSubmit called', formData, car);
+  //console.log("url for backend= "+BASE_URL)
+  //console.log('[ContactUs] handleContactSubmit called', formData, car);
   if (!formData.name || !formData.email || !formData.phone) {
     toast({
       title: "Missing Information",
@@ -15,6 +15,8 @@ export const handleContactSubmit = async (formData: any, car?: any) => {
     return false;
   }
   const carExchangeValue = formData.customField.carExchange ? 'Yes' : 'No';
+  //console.log('[ContactUs] formData.customField.carid:', formData.customField.carid);
+  //console.log('[ContactUs] car?._id:', car?._id);
   const payload = {
     ...formData,
     customField: {
@@ -25,7 +27,7 @@ export const handleContactSubmit = async (formData: any, car?: any) => {
       message: formData.message || ''
     }
   };
-  console.log('[ContactUs] About to POST to /api/contacts:', payload);
+  //console.log('[ContactUs] About to POST to /api/contacts:', payload);
   try {
     const res = await fetch(`${BASE_URL}/api/contacts`, {
       method: 'POST',
@@ -34,7 +36,7 @@ export const handleContactSubmit = async (formData: any, car?: any) => {
       
     });
     const result = await res.json();
-    console.log('[ContactUs] Backend response:', result);
+    //console.log('[ContactUs] Backend response:', result);
     // CRM integration
     const crmPayload = {
       locationId: "dvLotMiifOU7u2891LNr",
@@ -46,14 +48,15 @@ export const handleContactSubmit = async (formData: any, car?: any) => {
         "EricJ5qfNkLV7s6Hf9X2":car?.model || "",
         "kaIKPIZtQZUPksovees5":car?.manufactureYear?.toString() || '',
         "JAe1BBAn4dg0kaP2ZCmc":carExchangeValue,
-        "K7pAe60BBbITbm1cSb5J":formData.message || ''
+        "K7pAe60BBbITbm1cSb5J":formData.message || '',
+        "JeyMbUzbJqYMeO9KIPTa":formData.customField?.carid || ''
       },
       tags: ["Website Contact"]
     };
-    console.log('[ContactUs] About to send to CRM:', crmPayload);
+    //console.log('[ContactUs] About to send to CRM:', crmPayload);
     try {
       const crmResult = await createContact(crmPayload);
-      console.log('[ContactUs] CRM response:', crmResult);
+      //console.log('[ContactUs] CRM response:', crmResult);
       toast({ title: "CRM Success", description: "Contact sent to CRM successfully." });
     } catch (crmError) {
       console.error('[ContactUs] CRM Error:', crmError);
@@ -86,7 +89,8 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
   }
 
   const carExchangeValue = formData.customField.carExchange ? 'Yes' : 'No';
-
+  //console.log('[TestDrive] formData.customField.carid:', formData.customField.carid);
+  //console.log('[TestDrive] car?._id:', car?._id);
   const payload = {
     ...formData,
     customField: {
@@ -98,7 +102,7 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
     }
   };
 
-  console.log('[TestDrive] About to POST to /api/test-drives:', payload);
+  //console.log('[TestDrive] About to POST to /api/test-drives:', payload);
 
   try {
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/test-drives`, {
@@ -108,7 +112,7 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
     });
 
     const result = await res.json();
-    console.log('[TestDrive] Backend response:', result);
+    //console.log('[TestDrive] Backend response:', result);
 
     // Step 1: Create Contact in CRM
     toast({ title: "CRM", description: "Creating contact in CRM..." });
@@ -124,7 +128,8 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
           "EricJ5qfNkLV7s6Hf9X2":car?.model || "",
           "kaIKPIZtQZUPksovees5":car?.manufactureYear?.toString() || '',
           "JAe1BBAn4dg0kaP2ZCmc":carExchangeValue,
-          "K7pAe60BBbITbm1cSb5J":formData.message || ''
+          "K7pAe60BBbITbm1cSb5J":formData.message || '',
+          "JeyMbUzbJqYMeO9KIPTa":formData.customField?.carid || ''
         },
         tags: ["Website Test Drive"]
         
@@ -141,7 +146,7 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
 
     // Step 2: Create Opportunity in CRM
     toast({ title: "CRM", description: "Creating opportunity in CRM..." });
-    console.log(payload);
+    //console.log(payload);
     try {
       const opportunityPayload = {
         name: `Test Drive Request - ${payload.name}`,
@@ -174,11 +179,16 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
               "id": "JOHWQJGQsy9cuPEzsBHm", //message
               "type": "string",
               "field_value":  formData.message || ''
+          },
+          {
+            "id":"d7tc0S9XGGTDntj6JSEb", //carid
+            "type": "string",
+            "field_value":formData.customField?.carid || ''
           }
       ],
       };
       const crmOppResult = await createOpportunity(opportunityPayload);
-      console.log('[TestDrive] CRM Opportunity response:', crmOppResult);
+      //console.log('[TestDrive] CRM Opportunity response:', crmOppResult);
       toast({ title: "CRM Opportunity Success", description: "Test drive opportunity sent to CRM successfully." });
     } catch (crmOppError) {
       console.error('[TestDrive] CRM Opportunity Error:', crmOppError);

@@ -19,7 +19,7 @@ const ContactUsDialog: React.FC<ContactUsDialogProps> = ({ open, onOpenChange, f
       <form
         onSubmit={async e => {
           e.preventDefault();
-          console.log('[ContactUsDialog] Form submitted');
+          //console.log('[ContactUsDialog] Form submitted');
           await onSubmit(formState);
         }}
         className="space-y-4"

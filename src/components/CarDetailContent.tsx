@@ -44,7 +44,8 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
       carExchange: false,
       make: '',
       model: '',
-      year: ''
+      year: '',
+      carid:''
     }
   });
   const [testDriveForm, setTestDriveForm] = useState({
@@ -58,7 +59,8 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
       carExchange: false,
       make: '',
       model: '',
-      year: ''
+      year: '',
+      carid:''
     }
   });
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -348,7 +350,8 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
                                   ...form.customField,
                                   make: car.brand || '',
                                   model: car.model || '',
-                                  year: car.manufactureYear?.toString() || ''
+                                  year: car.manufactureYear?.toString() || '',
+                                  carid: carId
                                 }
                               }));
                               setShowContactForm(true);
@@ -365,7 +368,8 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
                                   ...form.customField,
                                   make: car.brand || '',
                                   model: car.model || '',
-                                  year: car.manufactureYear?.toString() || ''
+                                  year: car.manufactureYear?.toString() || '',
+                                  carid: carId
                                 }
                               }));
                               setShowTestDriveForm(true);
@@ -487,9 +491,11 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
                 open={showContactForm}
                 onOpenChange={setShowContactForm}
                 onSubmit={async (form) => {
+                  //console.log('ContactUsDialog submit form:', form);
+                  //console.log('ContactUsDialog car:', car);
                   const success = await handleContactSubmit(form, car);
                   if (success) {
-                    setContactForm({ name: '', email: '', phone: '', message: '', customField: { carExchange: false, make: '', model: '', year: '' } });
+                    setContactForm({ name: '', email: '', phone: '', message: '', customField: { carExchange: false, make: '', model: '', year: '',carid:carId } });
                     setShowContactForm(false);
                   }
                 }}
@@ -502,9 +508,11 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
                 open={showTestDriveForm}
                 onOpenChange={setShowTestDriveForm}
                 onSubmit={async (form) => {
+                  //console.log('TestDriveDialog submit form:', form);
+                  //console.log('TestDriveDialog car:', car);
                   const success = await handleTestDriveSubmit(form, car);
                   if (success) {
-                    setTestDriveForm({ name: '', email: '', phone: '', preferredDate: '', preferredTime: '', message: '', customField: { carExchange: false, make: '', model: '', year: '' } });
+                    setTestDriveForm({ name: '', email: '', phone: '', preferredDate: '', preferredTime: '', message: '', customField: { carExchange: false, make: '', model: '', year: '',carid:"" } });
                     setShowTestDriveForm(false);
                   }
                 }}

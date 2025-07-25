@@ -104,7 +104,7 @@ export async function fetchVehiclesFromBackend(params?: Record<string, any>): Pr
       url += `?${searchParams.toString()}`;
     }
   }
-  console.log('fetchVehiclesFromBackend URL:', url); // <-- Debug log
+  //console.log('fetchVehiclesFromBackend URL:', url); // <-- Debug log
   try {
     const response = await fetch(url, {
       method: 'GET',
