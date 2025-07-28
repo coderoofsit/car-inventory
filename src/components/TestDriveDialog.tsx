@@ -46,6 +46,7 @@ const TestDriveDialog: React.FC<TestDriveDialogProps> = ({ open, onOpenChange, f
           type="date"
           value={formState.preferredDate}
           onChange={e => setFormState({ ...formState, preferredDate: e.target.value })}
+          min={new Date().toISOString().split('T')[0]}
           required
         />
         <Input
@@ -53,6 +54,7 @@ const TestDriveDialog: React.FC<TestDriveDialogProps> = ({ open, onOpenChange, f
           type="time"
           value={formState.preferredTime}
           onChange={e => setFormState({ ...formState, preferredTime: e.target.value })}
+          min={formState.preferredDate === new Date().toISOString().split('T')[0] ? new Date().toTimeString().slice(0, 5) : undefined}
         />
         <div className="flex items-center space-x-2">
           <input

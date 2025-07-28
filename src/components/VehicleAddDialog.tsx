@@ -691,6 +691,18 @@ const VehicleAddDialog: React.FC<VehicleAddDialogProps> = ({ isOpen, onClose, on
                       />
                     </div>
 
+                    {/* Trim */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
+                      <Label htmlFor="trim" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Trim:</Label>
+                      <Input
+                        id="trim"
+                        placeholder="Enter Trim"
+                        value={vehicleData.trim || ''}
+                        onChange={(e) => handleInputChange('trim', e.target.value)}
+                        className="w-full sm:w-2/3 h-10 sm:h-11 px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-blue-50 text-gray-700 placeholder:text-gray-400"
+                      />
+                    </div>
+
                     {/* Registration Year (Month, Year) */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full sm:w-[34rem] gap-2">
                       <Label htmlFor="registrationMonth" className="w-full sm:w-1/3 text-left sm:text-right text-sm font-semibold text-gray-700 whitespace-nowrap">Registration Month/Year </Label>

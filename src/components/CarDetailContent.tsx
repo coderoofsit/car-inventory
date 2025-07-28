@@ -144,7 +144,7 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
     { label: 'STATUS', value: car.status || 'Not Specified' },
     { label: 'OWNER', value: car.ownerDetails || 'Not Specified' },
     { label: 'CONDITION', value: car.condition || 'Not Specified' },
-    { label: 'SELLING PRICE', value: car.sellingPrice ? `₹${Number(car.sellingPrice).toLocaleString()}` : 'Not Specified' },
+    // { label: 'SELLING PRICE', value: car.sellingPrice ? `₹${Number(car.sellingPrice).toLocaleString()}` : 'Not Specified' },
   ];
 
   const handlePrevMedia = () => setMediaIndex((prev) => (prev === 0 ? media.length - 1 : prev - 1));
@@ -258,9 +258,18 @@ const CarDetailContent: React.FC<CarDetailContentProps> = ({ carId, onBack, onEd
                   
                   <div className='flex flex-row justify-between items-start'>
                     <div className="flex-1 pr-2">
-                      <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 leading-tight">
-                        {car.manufactureYear} {toTitleCase(car.brand || '')} {toTitleCase(car.model || '')}
-                      </h1>
+                      <div className="flex items-start justify-between">
+                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 leading-tight">
+                          {car.manufactureYear} {toTitleCase(car.brand || '')} {toTitleCase(car.model || '')}
+                        </h1>
+                        {car.sellingPrice && (
+                          <div className="text-right ml-4">
+                            <div className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-blue-600">
+                              ₹{Number(car.sellingPrice).toLocaleString()}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm sm:text-lg text-gray-700 font-normal mb-2">
                         <span>{car.kmRun ? `${(car.kmRun/1000).toFixed(car.kmRun%1000===0?0:1)}K km` : 'Not Specified'}</span>
                         <span className="hidden sm:inline">·</span>

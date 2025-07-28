@@ -2,6 +2,23 @@ import { toast } from "@/hooks/use-toast";
 import { createContact, createOpportunity, debugStageIds } from "@/lib/ghlAPI";
 import { pipeline } from "stream";
 
+// Helper function to generate carId in the required format
+const generateCarIdForCRM = (car: any, originalCarId: string) => {
+  const year = car?.manufactureYear?.toString() || '';
+  const make = car?.brand || '';
+  const model = car?.model || '';
+  const trim = car?.trim || '';
+  const fuel = car?.fuelTypeDetails || '';
+  const transmission = car?.transmissionTypeDetails || '';
+  const exteriorColor = car?.exteriorColorDetails || '';
+  
+  // Combine all fields with spaces and the original carId
+  const combinedId = `${year} ${make} ${model} ${trim} ${fuel} ${transmission} ${exteriorColor}`;
+  
+  // Remove any undefined/null values and clean up the string
+  return combinedId.replace(/undefined|null/g, '').trim();
+};
+
 export const handleContactSubmit = async (formData: any, car?: any, fromTestDrive:boolean = false) => {
   const BASE_URL = import.meta.env.VITE_BACKEND_URL;
   //console.log("url for backend= "+BASE_URL)
@@ -50,7 +67,7 @@ export const handleContactSubmit = async (formData: any, car?: any, fromTestDriv
         "kaIKPIZtQZUPksovees5":car?.manufactureYear?.toString() || '',
         "JAe1BBAn4dg0kaP2ZCmc":carExchangeValue,
         "K7pAe60BBbITbm1cSb5J":formData.message || '',
-        "JeyMbUzbJqYMeO9KIPTa":formData.customField?.carid || ''
+        "JeyMbUzbJqYMeO9KIPTa":generateCarIdForCRM(car, formData.customField?.carid || '')
       },
       tags: ["Website Contact"]
     };
@@ -59,21 +76,24 @@ export const handleContactSubmit = async (formData: any, car?: any, fromTestDriv
       if (!fromTestDrive) {
         const crmResult = await createContact(crmPayload);
       //console.log('[ContactUs] CRM response:', crmResult);
-        toast({ title: "CRM Success", description: "Contact sent to CRM successfully." });
+        // toast({ title: "CRM Success", description: "Contact sent to CRM successfully." });
       }
     } catch (crmError) {
-      console.error('[ContactUs] CRM Error:', crmError);
-      toast({ title: "CRM Failed", description: "Failed to send contact to CRM.", variant: "destructive" });
+      // console.error('[ContactUs] CRM Error:', crmError);
+      // toast({ title: "CRM Failed", description: "Failed to send contact to CRM.", variant: "destructive" });
     }
-    toast({ title: "Message Sent!", description: "We'll contact you soon about this vehicle." });
+    if(!fromTestDrive){
+      toast({ title: "Message Sent!", description: "We'll contact you soon about this vehicle." });
+    }
+    
     return true;
   } catch (err) {
-    console.error('[ContactUs] Backend Error:', err);
-    toast({
-      title: "Backend Error",
-      description: "Could not save contact to backend.",
-      variant: "destructive"
-    });
+    // console.error('[ContactUs] Backend Error:', err);
+    // toast({
+    //   title: "Backend Error",
+    //   description: "Could not save contact to backend.",
+    //   variant: "destructive"
+    // });
     return false;
   }
 };
@@ -122,7 +142,6 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
     //console.log('[TestDrive] Backend response:', result);
 
     // Step 1: Create Contact in CRM
-    toast({ title: "CRM", description: "Creating contact in CRM..." });
     let contactId = null;
     try {
       const crmContactPayload = {
@@ -136,7 +155,7 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
           "kaIKPIZtQZUPksovees5":car?.manufactureYear?.toString() || '',
           "JAe1BBAn4dg0kaP2ZCmc":carExchangeValue,
           "K7pAe60BBbITbm1cSb5J":formData.message || '',
-          "JeyMbUzbJqYMeO9KIPTa":formData.customField?.carid || ''
+          "JeyMbUzbJqYMeO9KIPTa":generateCarIdForCRM(car, formData.customField?.carid || '')
         },
         tags: ["Website Test Drive"]
         
@@ -144,19 +163,19 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
       const crmContactResult = await createContact(crmContactPayload);
       contactId = crmContactResult.contact?.id || crmContactResult.id;
       if (!contactId) throw new Error('No contactId returned from CRM');
-      toast({ title: "CRM Success", description: "Contact created in CRM." });
+      // toast({ title: "CRM Success", description: "Contact created in CRM." });
     } catch (crmError) {
-      console.error('[TestDrive] CRM Contact Error:', crmError);
-      toast({ title: "CRM Contact Failed", description: "Failed to create contact in CRM.", variant: "destructive" });
+      // console.error('[TestDrive] CRM Contact Error:', crmError);
+      // toast({ title: "CRM Contact Failed", description: "Failed to create contact in CRM.", variant: "destructive" });
       return false;
     }
 
     // Step 2: Create Opportunity in CRM
-    toast({ title: "CRM", description: "Creating opportunity in CRM..." });
+    // toast({ title: "CRM", description: "Creating opportunity in CRM..." });
     //console.log(payload);
     try {
       const opportunityPayload = {
-        name: `Test Drive Request - ${payload.name}`,
+        name: `${payload.name}`,
         status: "open",
         contactId,
         monetaryValue: '', // Optionally fill with price or leave blank
@@ -190,16 +209,16 @@ export const handleTestDriveSubmit = async (formData: any, car?: any) => {
           {
             "id":"d7tc0S9XGGTDntj6JSEb", //carid
             "type": "string",
-            "field_value":formData.customField?.carid || ''
+            "field_value":generateCarIdForCRM(car, formData.customField?.carid || '')
           }
       ],
       };
       const crmOppResult = await createOpportunity(opportunityPayload);
       //console.log('[TestDrive] CRM Opportunity response:', crmOppResult);
-      toast({ title: "CRM Opportunity Success", description: "Test drive opportunity sent to CRM successfully." });
+      // toast({ title: "CRM Opportunity Success", description: "Test drive opportunity sent to CRM successfully." });
     } catch (crmOppError) {
-      console.error('[TestDrive] CRM Opportunity Error:', crmOppError);
-      toast({ title: "CRM Opportunity Failed", description: "Failed to send test drive opportunity to CRM.", variant: "destructive" });
+      // console.error('[TestDrive] CRM Opportunity Error:', crmOppError);
+      // toast({ title: "CRM Opportunity Failed", description: "Failed to send test drive opportunity to CRM.", variant: "destructive" });
       return false;
     }
 
